@@ -1,0 +1,179 @@
+### Configuration file for yam package in json format
+# Comments are indicated with "#" and ignored while parsing
+
+{
+
+
+### Logging options
+
+# Loglevels 3=debug, 2=info, 1=warning, 0=error and log file
+# Verbosity can be set on the command line or here
+
+#"verbose": 3,
+"loglevel": 3,
+"logfile": "yam.log",
+
+
+
+### Options for input and output
+
+"io": {
+        # Glob expression of station inventories
+        "inventory": "example_inventory/CX.*.xml",
+
+        # Expression for data file names (each 1 day). It will be evaluated by
+        # string.format(t=day_as_utcdatetime, **station_meta).
+        # The default value corresponds to the default naming of ObsPys FDSN Massdownloader.
+        # Scheme for SDS archive
+        # "data": "example_sds_archive/{t.year}/{network}/{station}/{channel}.D/{network}.{station}.{location}.{channel}.D.{t.year}.{t.julday:03d}",
+        "data": "example_data/{network}.{station}.{location}.{channel}__{t.year}{t.month:02d}{t.day:02d}*.mseed",
+        "data_format": "MSEED",
+
+        # If the file name expression does not fit your needs, data can be loaded by a
+        # custom function.
+        # data_plugin has form "module : function", e.g. "data : get_data".
+        # Then, inside data.py the following function must exist:
+        # def get_data(starttime, endtime, network, station, location, channel):
+        #     """load corresponding data and return obspy Stream"""
+        #     ...
+        #     return obspy_stream
+        # if set, "data" and "data_format" will be ignored
+        "data_plugin": null,
+
+        # Filenames for results (can also be the same file for all results) and path for plots
+        "corr": "corr.h5",
+        "stack": "stack.h5",
+        "stretch": "stretch.h5",
+        "plot": "plots"
+        },
+
+
+### Different configurations for the correlation.
+# Each configuration is activated by the corresponding key on the command line (here "1" and "auto").
+# The options are passed to yam.correlate.correlate.
+
+"correlate": {
+        "1": {  # Filter the inventory with ObsPy's select_inventory method (null or dict, see below)
+        	       "filter_inventory": null,
+        	       # remove_response: null or true or dictionary passed to remove_response method
+                "remove_response": null,
+                # Start and end day for processing the correlations.
+                # The script will try to load data for all channels defined in the inventories
+                # (satisfying the conditions defined further down) and for all days inside this time period.
+                "startdate": "2010-02-01",
+                "enddate": "2010-02-14",
+                # length of each correlation in seconds and overlap (1 hour correlations with 0.5 hour overlap)
+                "length": 3600,
+                "overlap": 1800,
+                # discard a correlation if less than 90% of data available (can be null)
+                "discard": 0.9,
+                # downsample or resample data to this frequency
+                "downsample": 10,
+                # filter data (minfreq, maxfreq), bandpass, highpass or lowpass (minfreq or maxfreq can be null)
+                "filter": [0.01, 0.5],
+                # maximal lag time of correlations in seconds (correlation goes from -300s to +300s)
+                "max_lag": 300,
+                # normalization methods to use (order matters)
+                "normalization": ["1bit", "spectral_whitening"],
+                # time normalization options, see yam.correlate.time_norm
+                "time_norm_options": {},
+                # spectral whitening options, see yam.correlate.spectral_whitening
+                "spectral_whitening_options": {"filter": [0.01, 0.5]},
+                # only_auto_correlation -> only use correlations between the same station (different channels possible)
+                # station_combinations (null, list) -> only use these station combinations (with or without network code)
+                # component_combinations (null, list) -> only use these component combinations
+                "station_combinations": ["CX.PATCX-CX.PB01", "PATCX-PB06", "PB06-PB06"],
+                "component_combinations": ["ZZ", "NZ"],
+                # weather to save the correlations (here the 1h-correlations)
+                "keep_correlations": false,
+                # Stack the correlations (null or "1d" or "xxxh").
+                # Note, that "keep_correlations": false togehter with "stack": null does not make sense,
+                # because correlations would not be written to disk and lost.
+                # Stack can not be larger than "1d" here, because processing is performed on daily data files.
+                # If you want to stack over a longer time, use the separate stack command.
+                "stack": "1d"
+                },
+        "1a": { # "based_on" loads configuration from another id and overwrites the given parameters.
+                # This is also possible for the other configurations (e.g. "stretch").
+                "based_on": "1",
+                "filter": [0.5, 1],
+                "normalization": ["clip", "spectral_whitening"],
+                "time_norm_options": {"clip_factor": 2},
+                "spectral_whitening_options": {"filter": [0.5, 1], "smooth": 0.5},
+                "station_combinations": ["PATCX-PB06"]
+                },
+        "auto": {
+                "filter_inventory": {"station": "PATCX"},
+                "remove_response": true,
+                "startdate": "2010-02-01",
+                "enddate": "2010-02-14",
+                "length": 3600,
+                "overlap": 1800,
+                "discard": null,
+                "filter": [4, null],
+                "max_lag": 30,
+                "normalization": "mute_envelope",
+                "only_auto_correlation": true,
+                "component_combinations": ["ZZ", "NZ"],
+                "stack": null,
+                "keep_correlations": true
+                }
+        },
+
+
+### Different configurations for stacking.
+# Each configuration is activated by the corresponding id.
+# The stacking configuration can also be defined directly by the stacking id.
+# (E.g. "10d" stacks each 10 days together,
+#       "10dm5d" 5 days moving stack with average over 10 days)
+# The options are passed to yam.stack.stack.
+
+"stack": {
+        # Stack configuration for the stack command can be configured in more detail.
+        # The first configuration is equivalent to using the expression "3dm1d"
+        "1": {"length": "3d", "move": "1d"},
+        "2": {"length": 7200, "move": 1800}
+        },
+
+
+### Different configurations for the stretching.
+# Each configuration is activated by the corresponding id.
+# The options are passed to yam.stretch.stretch
+
+"stretch": {
+        "1": {  # filter correlations
+        	       "filter": [0.02, 0.4],
+        	       # stretching range (here from -10% to 10%)
+                "str_range": 0.1,
+                # number of stretching samples
+                "nstr": 100,
+                # different lag time windows to analyze
+                # (first entry starttimes in seconds, second entry: length in seconds, here three different time windows)
+                "time_windows": [[10, 20, 30], 10],
+                # Time windows can be defined relative to (distance between stations) / given velocity.
+                # Set it to null to have time windows defined relative to 0s lag time.
+                "time_windows_relative":  2,  # in km/s
+                # analyze this side of the correlation ("left", "right", "both")
+                "sides": "both"
+                },
+        "2": {  "str_range": 0.02,
+                "nstr": 100,
+                "time_windows": [[5, 10, 15], 5],
+                "time_windows_relative": null,  # relative to middle (0s lag time)
+                "sides": "right"
+                }
+        },
+
+### Plotting options
+# These can be further customized on the command line via --plot-options
+# See the corresponding functions in yam.imaging module for available options.
+
+"plot_stations_options": {},
+"plot_data_options": {},
+"plot_prepdata_options": {},
+"plot_corr_vs_dist_options": {},
+"plot_corr_vs_time_options": {},
+"plot_corr_vs_time_wiggle_options": {},
+"plot_sim_mat_options": {}
+
+}
