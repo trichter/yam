@@ -1,0 +1,126 @@
+## yam
+Yet another monitoring tool using correlations of ambient noise
+
+[![build status](https://travis-ci.org/trichter/yam.svg?branch=master)](https://travis-ci.org/trichter/yam)
+[![codecov](https://codecov.io/gh/trichter/yam/branch/master/graph/badge.svg)](https://codecov.io/gh/trichter/yam)
+[![pypi version](https://img.shields.io/pypi/v/yam.svg)](https://pypi.python.org/pypi/yam)
+[![python version](https://img.shields.io/pypi/pyversions/yam.svg)](https://python.org)
+
+
+#### Motivation
+
+Why another monitoring tool for seismic velocities using ambient noise cross-correlations?
+
+There are several alternatives around, namely [MSNoise](https://github.com/ROBelgium/MSNoise) and [MIIC](https://github.com/miic-sw/miic). *MSNoise* is especially useful for large datasets and continuous monitoring. Configuration and the state of a project is managed by sqlite or mysql database. A project can be configured via web interface. It has a command line interface. Velocity variations are determined with the Moving Window Cross Spectral technique (MWCS).
+
+*MIIC* is based on blockcanvas, which is a bit unhandy. But blockcavas is no hard dependency anymore and it can be used as a standalone library. It lacks a nice interface as MSNoise. For the velocity varitions it uses the time-domain stretching technique.
+
+*Yam*, contrary to MSNoise, is designed for off-line usage, but also includes capabilities to reprocess continuously growing data. Yam does not rely onto a database, but rather checks on the fly which results already exist and which results have still to be calculated. Cross-correlations are written to HDF5 files via the ObsPy plugin obspyh5. Thus, correlation data can be easily accessed with ObsPy's `read()` function after the calculation. It follows a similar processing flow as MSNoise, but it uses the stretching library from MIIC. The configuration is done via a simple, but heavily commented JSON file. Some code was reused from previous project [sito](https://github.com/trichter/sito).
+
+
+#### Installation
+
+Dependencies of `yam` are `obspy>=1.1 obspyh5 h5py`.
+If you use anaconda installation is as easy as:
+
+```
+conda --add channels conda-forge
+conda create -n yam python=3 obspy h5py
+source activate yam
+pip install yam
+```
+
+After that, you can run the tests with `yam-runtests` and check if everything is installed properly.
+
+
+#### Basic usage
+
+The scripts are started with the command line prorgam `yam`. `yam -h` gives an overview over available commands and options. Each command has its own help, e.g. `yam correlate -h` will print help for the `correlate` command.
+
+`create` will create an example configuration file in JSON format.
+The processing commands are `correlate`, `stack` and `stretch`.
+
+`info`, `print`, `load` and `plot` commands allow to inspect correlations, stacks and stretching results as well as preprocessed data and other aspects.
+
+Correlations, corresponding stacks and stretching results are saved in HDF5 files.
+The indices inside the HDF5 files are the following:
+```
+'/waveforms/{key}/{network1}.{station1}-{network2}.{station2}/{location1}.{channel1}-{location2}.{channel2}/{starttime.datetime:%Y-%m-%dT%H:%M}'
+'/stretch/{key}/{network1}.{station1}-{network2}.{station2}/{location1}.{channel1}-{location2}.{channel2}'
+```
+
+The strings are expanded with the corresponding metadata. Several tools are available for analysing the contents of the HDF5 files, e.g. `h5ls` or `hdfview`.
+
+#### About keys and different configurations
+
+`key` in the above indices and as a paramter in the comand line interface is a special parameter which describes the processing chain.
+It is best explained with an example: A key could be `c1_s2d_twow`. This means data was correlated (`c`) with configuration `1`, each two days `2d` are stacked (`s`) and finally data was stretched (`t`) using the stretching configuration `wow`. The configuration of the keys are defined in the configuration file. (These ids may not contain `_`, because `_` is used to sparate the different processing steps.)
+The `s` key is special, because it can describe the stacking procedure directly: For example, `s5d` stacks correlations of 5 days, `s2h` of 2 hours, `s5dm2.5d` is a 2.5 day moving (`m`) stack over 5 days, with `d` corresponding to days and `h` corresponding to hours. But `s` can also precede a key which is described in the configuration file.
+
+Valid processing chains could be represented by `c2` (data is only correlated) `c2_t2` (and directly stretched afterwards), `c1_s10dm5d_t1` (correlation, moving stack, stretch), `c1_s1d_s5dm2d` (correlation, stack, moving stack) or similar.
+
+
+#### Tutorial
+
+A small tutorial with an example dataset is included. It can be loaded into an empty directory with `yam create --tutorial`. Now you can try out some of the following commands:
+
+```
+yam info               # plot information about project
+yam info stations      # print inventory info
+yam info data          # plot info about data files
+yam plot stations      # plot station map
+yam print data CX.PATCX..BHZ 2010-02-03     # load data for a specific station and day and print information
+yam load data CX.PATCX..BHZ 2010-02-03      # load data for a specific station and day and start an IPython session
+yam plot data CX.PATCX..BHZ 2010-02-03      # plot a day file
+yam plot data CX.PATCX..BHZ 2010-02-03 1    # plot the preprocessed data of the same day (preproccessing defined in corr config 1)
+
+yam correlate 1        # correlates data with corr configuration 1
+yam correlate 1        # should finish fast, because everything is already calculated
+yam correlate auto     # correlate data with another configuration suitable for auto-correlations
+yam plot c1_s1d --plottype vs_dist  # plot correlation versus distance
+yam plot cauto --plot-options '{"trim": [0, 10], "figsize": [5, 10]}'  # plot auto-correlations versus time and change some options
+                                                                       # ("wiggle" plot also possible)
+yam stack c1_s1d 3dm1d       # stack 1 day correlations with a moving stack of 3 days
+yam stack cauto 2            # stack auto-correlations with stack configid 2
+
+yam stretch c1_s1d_s3dm1d 1  # stretch the stacked data with stretch configuration 1
+yam stretch cauto_s2 2       # stretch the stacked auto-correlations with another stretch configuration
+yam info                     # find out about the keys which are already in use
+yam plot cauto_s2_t2 --show  # plot all similarity matrices for this processing chain and display them on screen (zoom etc.)
+yam plot c1_s1d_s3dm1d_t1/CX.PATCX-CX.PB01  # plot similarity matrices, but only for one station combination
+                                            # (restricting the group is also possible for stacking and stretching)
+```
+
+Of course, the plots do not look overwhelmingly for such a small dataset.
+
+
+#### Use your own data
+
+Create the example configuration with `yam create` and adapt it to your needs. A good start is to change the `inventory` and `data` parameters.
+
+
+#### Read correlation and results of stretching procedure in Python for further processing
+
+```py
+from obspy import read
+from yam import read_stretch
+
+# read a whole file of correlations
+stream = read('corr.h5', 'H5')
+# to read only part of a file
+stream = read('stack.h5', 'H5', include_only=dict(key='c1_s1d', network1='CX', station1='PATCX',
+                                                  network2='CX', station2='PB01'))
+# or specify the group explicitly
+stream = read('stack.h5', 'H5', group='waveforms/c1_s1d/')
+
+# read the stretching results into a dictionary
+stretch_result = read_stretch('stretch.h5', 'c1_s1d_t1')
+```
+
+
+#### Documentation
+
+* this readme
+* comments in the configuration file
+* docstrings in the source code (todo)
+* get help at the [seistools](https://lserv.uni-jena.de/mailman/listinfo/seistools) mailing list
