@@ -1,0 +1,43 @@
+language: c
+sudo: false
+matrix:
+  include:
+    - os: linux
+      env: PYTHON_VERSION=3.5
+    - os: linux
+      env: PYTHON_VERSION=3.6
+    - os: osx
+      env: PYTHON_VERSION=3.6
+before_install:
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      export OS="MacOSX";
+    else
+      export OS="Linux";
+    fi
+  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-${OS}-x86_64.sh -O miniconda.sh;
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - hash -r
+  - conda config --set always_yes yes
+  - conda update -q conda
+  - conda config --add channels conda-forge
+  - conda info -a
+  - conda create -q -n testenv
+      python=$PYTHON_VERSION
+      obspy coverage tqdm h5py
+  - source activate testenv
+  - conda uninstall obspy
+  - pip install https://github.com/obspy/obspy/archive/master.zip
+  - pip install obspyh5
+  - conda list
+install:
+  - pip install --no-deps .
+script:
+  - mkdir empty; cd empty
+  - cp ../.coveragerc ./
+  - coverage run -m yam.tests
+after_success:
+  - coverage combine
+  - bash <(curl -s https://codecov.io/bash)
+notifications:
+    email: false
