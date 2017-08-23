@@ -15,6 +15,7 @@ import tqdm
 import matplotlib
 matplotlib.use('Agg')
 
+VERBOSE = False
 
 def _replace_in_file(fname_src, fname_dest, str_src, str_dest):
     with open(fname_src) as f:
@@ -28,6 +29,9 @@ class TestCase(unittest.TestCase):
 
     def setUp(self):
         args = sys.argv[1:]
+        if '-v' in args:
+            global VERBOSE
+            VERBOSE = True
         self.permanent_tempdir = '-p' in args
         if self.permanent_tempdir:
             tempdir = os.path.join(tempfile.gettempdir(), 'yam_test')
@@ -60,17 +64,17 @@ class TestCase(unittest.TestCase):
     def out(self, cmd, text=None):
         t2 = self.redirect_output(cmd)
         if text is not None:
-            if os.getenv('TRAVIS') is not None:
-                print(text)
+            if VERBOSE:
+                print(t2)
             self.assertIn(text, t2)
         self.pbar.update(1)
         return t2
 
-    def err(self, cmd, text=None):
+    def err(self, cmd, text=None, verbose=False):
         t2 = self.redirect_output(cmd, True)
         if text is not None:
-            if os.getenv('TRAVIS') is not None:
-                print(text, file=sys.stderr)
+            if VERBOSE:
+                print(t2, file=sys.stderr)
             self.assertIn(text, t2)
         self.pbar.update(1)
         return t2
@@ -102,6 +106,7 @@ class TestCase(unittest.TestCase):
             self.out('info', 'Not found')
         self.out('create --tutorial')
         self.run_('create --tutorial')
+        _replace_in_file('conf.json', 'conf.json', '#"verbose"', '"verbose"')
 
         # check basics
         _replace_in_file('conf.json', 'conf2.json', '"io"', '"io",')
@@ -159,7 +164,7 @@ def get_data(starttime, endtime, **smeta):
         t1 = time.time()
         self.run_('correlate 1')
         t2 = time.time()
-        self.out('correlate 1 -vvv')
+        self.out('correlate 1 -v')
         t3 = time.time()
         if not self.permanent_tempdir:
             self.assertLess(t3 - t2, 0.5 * (t2 - t1))
@@ -246,15 +251,11 @@ def get_data(starttime, endtime, **smeta):
         self.run_('export cauto/CX.PATCX-CX.PATCX %s --format H5' % fname)
         self.assertTrue(os.path.exists(fname), msg='%s missing' % fname)
 
-        # check load
-        import IPython
-
-        def _dummy_start(**kwargs):
-            pass
-        IPython.start_ipython = _dummy_start
-        self.out('load cauto', 'Good Bye')
-        self.out('load c1_s1d', 'Good Bye')
-        self.out('load c1_s1d_t1/CX.PATCX-CX.PB01', 'Good Bye')
+        # check load (IPython mocked)
+        with unittest.mock.patch('IPython.start_ipython'):
+            self.out('load cauto', 'Good Bye')
+            self.out('load c1_s1d', 'Good Bye')
+            self.out('load c1_s1d_t1/CX.PATCX-CX.PB01', 'Good Bye')
 
     def tearDown(self):
         os.chdir(self.cwd)

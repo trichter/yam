@@ -35,7 +35,7 @@ install:
 script:
   - mkdir empty; cd empty
   - cp ../.coveragerc ./
-  - coverage run -m yam.tests
+  - coverage run -m yam.tests -v
 after_success:
   - coverage combine
   - bash <(curl -s https://codecov.io/bash)

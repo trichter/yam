@@ -1,9 +1,10 @@
 """
 Tests for the rf package.
 
-yam-runtests [-h] [-p] [-d]
+yam-runtests [-h] [-v] [-p] [-d]
 
 -h    short help
+-v    be verbose
 -p    use permanent tempdir
 -d    empty permanent tempdir at start
 """
