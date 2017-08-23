@@ -5,6 +5,8 @@ from pkg_resources import load_entry_point
 import contextlib
 import glob
 import io
+import logging
+import importlib
 import os
 import shutil
 import sys
@@ -59,6 +61,9 @@ class TestCase(unittest.TestCase):
                 except SystemExit:
                     if not raises_systemexit:
                         raise
+                finally:
+                    logging.shutdown()
+                    importlib.reload(logging)
             return f.getvalue()
 
     def out(self, cmd, text=None):
@@ -80,7 +85,11 @@ class TestCase(unittest.TestCase):
         return t2
 
     def run_(self, cmd):
-        self.script(cmd.split())
+        try:
+            self.script(cmd.split())
+        finally:
+            logging.shutdown()
+            importlib.reload(logging)
         self.pbar.update(1)
         self.pbar.refresh()
 
@@ -106,7 +115,9 @@ class TestCase(unittest.TestCase):
             self.out('info', 'Not found')
         self.out('create --tutorial')
         self.run_('create --tutorial')
-        _replace_in_file('conf.json', 'conf.json', '#"verbose"', '"verbose"')
+        if VERBOSE:
+            _replace_in_file('conf.json', 'conf.json',
+                             '#"verbose"', '"verbose"')
 
         # check basics
         _replace_in_file('conf.json', 'conf2.json', '"io"', '"io",')
