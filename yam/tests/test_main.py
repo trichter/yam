@@ -17,7 +17,6 @@ import tqdm
 import matplotlib
 matplotlib.use('Agg')
 
-VERBOSE = False
 
 def _replace_in_file(fname_src, fname_dest, str_src, str_dest):
     with open(fname_src) as f:
@@ -31,9 +30,7 @@ class TestCase(unittest.TestCase):
 
     def setUp(self):
         args = sys.argv[1:]
-        if '-v' in args:
-            global VERBOSE
-            VERBOSE = True
+        self.verbose = '-v' in args
         self.permanent_tempdir = '-p' in args
         if self.permanent_tempdir:
             tempdir = os.path.join(tempfile.gettempdir(), 'yam_test')
@@ -53,56 +50,51 @@ class TestCase(unittest.TestCase):
             _replace_in_file(covfn + 'rc', '.coveragerc', '[run]',
                              '[run]\ndata_file = ' + covfn)
 
-    def redirect_output(self, args, raises_systemexit=False):
-        with io.StringIO() as f:
-            with contextlib.redirect_stdout(f), contextlib.redirect_stderr(f):
-                try:
-                    self.script(args.split())
-                except SystemExit:
-                    if not raises_systemexit:
-                        raise
-                finally:
-                    logging.shutdown()
-                    importlib.reload(logging)
-            return f.getvalue()
+        self.plotdir = os.path.join(self.tempdir, 'plots')
+        self.script = load_entry_point('yam', 'console_scripts', 'yam')
+        total = 72 - 2 * self.permanent_tempdir
+        self.pbar = tqdm.tqdm(total=total, desc='CLI tests passed')
 
-    def out(self, cmd, text=None):
-        t2 = self.redirect_output(cmd)
-        if text is not None:
-            if VERBOSE:
-                print(t2)
-            self.assertIn(text, t2)
-        self.pbar.update(1)
-        return t2
+        def run_(*args): return self.run_wrapper(*args, do='run')
+        def out(*args): return self.run_wrapper(*args, do='out')
+        def err(*args): return self.run_wrapper(*args, do='err')
 
-    def err(self, cmd, text=None, verbose=False):
-        t2 = self.redirect_output(cmd, True)
-        if text is not None:
-            if VERBOSE:
-                print(t2, file=sys.stderr)
-            self.assertIn(text, t2)
-        self.pbar.update(1)
-        return t2
+        self.run_ = run_
+        self.out = out
+        self.err = err
 
-    def run_(self, cmd):
+
+    def run_wrapper(self, cmd, text=None, do='run'):
+        if (os.getenv('TRAVIS') is not None and '--njobs' not in cmd and
+                cmd.split()[0] in ('correlate', 'stretch')):
+            cmd = cmd + ' --njobs 2'
         try:
-            self.script(cmd.split())
+            with io.StringIO() as f:
+                with contextlib.redirect_stdout(f), contextlib.redirect_stderr(f):
+                    self.script(cmd.split())
+                text2 = f.getvalue()
+                if text2 is not None:
+                    if self.verbose and text2 != '':
+                        if do == 'out':
+                            print(text2)
+                        elif do== 'err':
+                            print(text2, file=sys.stderr)
         finally:
             logging.shutdown()
             importlib.reload(logging)
-        self.pbar.update(1)
-        self.pbar.refresh()
+            self.pbar.update(1)
+        if do == 'run':
+            self.assertTrue(text2 is None or text2 == '')
+        elif text is not None:
+            self.assertIn(text, text2)
+        return text2
+
 
     def checkplot(self, bname):
         fname = os.path.join(self.plotdir, bname)
         self.assertTrue(os.path.exists(fname), msg='%s missing' % fname)
 
     def test_cli(self):
-
-        self.plotdir = os.path.join(self.tempdir, 'plots')
-        self.script = load_entry_point('yam', 'console_scripts', 'yam')
-        total = 72 - 2 * self.permanent_tempdir
-        self.pbar = tqdm.tqdm(total=total, desc='CLI tests passed')
 
         # create tutorial
         self.err('-h', 'print information about')
@@ -115,7 +107,7 @@ class TestCase(unittest.TestCase):
             self.out('info', 'Not found')
         self.out('create --tutorial')
         self.run_('create --tutorial')
-        if VERBOSE:
+        if self.verbose:
             _replace_in_file('conf.json', 'conf.json',
                              '#"verbose"', '"verbose"')
 
@@ -263,10 +255,10 @@ def get_data(starttime, endtime, **smeta):
         self.assertTrue(os.path.exists(fname), msg='%s missing' % fname)
 
         # check load (IPython mocked)
-        with unittest.mock.patch('IPython.start_ipython'):
-            self.out('load cauto', 'Good Bye')
-            self.out('load c1_s1d', 'Good Bye')
-            self.out('load c1_s1d_t1/CX.PATCX-CX.PB01', 'Good Bye')
+        sys.modules['IPython'] = unittest.mock.MagicMock()
+        self.out('load cauto', 'Good Bye')
+        self.out('load c1_s1d', 'Good Bye')
+        self.out('load c1_s1d_t1/CX.PATCX-CX.PB01', 'Good Bye')
 
     def tearDown(self):
         os.chdir(self.cwd)

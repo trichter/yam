@@ -71,8 +71,6 @@ def start_parallel_jobs(tasks, do_work, write, njobs=None):
             for task in tqdm.tqdm(tasks, total=len(tasks)):
                 do_work(task)
         else:
-            if os.getenv('TRAVIS') is not None:
-                njobs = 2
             pool = multiprocessing.Pool(njobs)
             log.info('do work parallel (%d cores)', pool._processes)
             for _ in tqdm.tqdm(pool.imap_unordered(do_work, tasks),
