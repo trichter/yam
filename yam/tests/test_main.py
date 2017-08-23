@@ -60,6 +60,8 @@ class TestCase(unittest.TestCase):
     def out(self, cmd, text=None):
         t2 = self.redirect_output(cmd)
         if text is not None:
+            if os.getenv('TRAVIS') is not None:
+                print(text)
             self.assertIn(text, t2)
         self.pbar.update(1)
         return t2
@@ -67,6 +69,8 @@ class TestCase(unittest.TestCase):
     def err(self, cmd, text=None):
         t2 = self.redirect_output(cmd, True)
         if text is not None:
+            if os.getenv('TRAVIS') is not None:
+                print(text, file=sys.stderr)
             self.assertIn(text, t2)
         self.pbar.update(1)
         return t2
