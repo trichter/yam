@@ -27,7 +27,7 @@ before_install:
       obspy coverage tqdm h5py
   - source activate testenv
   - conda uninstall obspy
-  - pip install https://github.com/obspy/obspy/archive/master.zip
+  - pip install git+https://github.com/obspy/obspy.git
   - pip install obspyh5
   - conda list
 install:
