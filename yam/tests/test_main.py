@@ -71,7 +71,11 @@ class TestCase(unittest.TestCase):
         try:
             with io.StringIO() as f:
                 with contextlib.redirect_stdout(f), contextlib.redirect_stderr(f):
-                    self.script(cmd.split())
+                    try:
+                        self.script(cmd.split())
+                    except SystemExit:
+                        if '-h' not in cmd:
+                            raise
                 text2 = f.getvalue()
                 if text2 is not None:
                     if self.verbose and text2 != '':
