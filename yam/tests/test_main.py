@@ -62,7 +62,6 @@ class TestCase(unittest.TestCase):
         if text is not None:
             self.assertIn(text, t2)
         self.pbar.update(1)
-        self.pbar.refresh()
         return t2
 
     def err(self, cmd, text=None):
@@ -70,7 +69,6 @@ class TestCase(unittest.TestCase):
         if text is not None:
             self.assertIn(text, t2)
         self.pbar.update(1)
-        self.pbar.refresh()
         return t2
 
     def run_(self, cmd):
