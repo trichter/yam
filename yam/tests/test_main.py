@@ -2,7 +2,7 @@
 
 import unittest
 from pkg_resources import load_entry_point
-import contextlib
+from contextlib import redirect_stderr, redirect_stdout
 import glob
 import io
 import logging
@@ -55,69 +55,62 @@ class TestCase(unittest.TestCase):
         total = 72 - 2 * self.permanent_tempdir
         self.pbar = tqdm.tqdm(total=total, desc='CLI tests passed')
 
-        def run_(*args): return self.run_wrapper(*args, do='run')
-        def out(*args): return self.run_wrapper(*args, do='out')
-        def err(*args): return self.run_wrapper(*args, do='err')
 
-        self.run_ = run_
-        self.out = out
-        self.err = err
-
-
-    def run_wrapper(self, cmd, text=None, do='run'):
-        if (os.getenv('TRAVIS') is not None and '--njobs' not in cmd and
+    def out(self, cmd, text=None):
+        """Test if text is in output of command"""
+        # for TRAVIS use maximal two cores
+        if (os.getenv('TRAVIS') and '--njobs' not in cmd and
                 cmd.split()[0] in ('correlate', 'stretch')):
             cmd = cmd + ' --njobs 2'
+        # disabling the logger is necessary, because the logging
+        # configuration cannot be changed easily on subsequent calls
+        # of yam in this test suite
+        if self.verbose and cmd.split()[0] in ('correlate', 'stack', 'stretch'):
+            if '-v' not in cmd:
+                cmd = cmd + ' -vvv'
+            logging.getLogger('yam').disabled = False
+        elif self.verbose:
+            logging.getLogger('yam').disabled = True
+        # catching all output, print only if tests are run with -v
         try:
             with io.StringIO() as f:
-                with contextlib.redirect_stdout(f), contextlib.redirect_stderr(f):
+                with redirect_stdout(f), redirect_stderr(f):
                     try:
                         self.script(cmd.split())
                     except SystemExit:
-                        if '-h' not in cmd:
-                            raise
-                text2 = f.getvalue()
-                if text2 is not None:
-                    if self.verbose and text2 != '':
-                        if do == 'out':
-                            print(text2)
-                        elif do== 'err':
-                            print(text2, file=sys.stderr)
+                        pass
+                output = f.getvalue()
+            if self.verbose:
+                tqdm.tqdm.write(output)
         finally:
-            logging.shutdown()
-            importlib.reload(logging)
             self.pbar.update(1)
-        if do == 'run':
-            self.assertTrue(text2 is None or text2 == '')
-        elif text is not None:
-            self.assertIn(text, text2)
-        return text2
+        if text is not None:
+            self.assertIn(text, output)
+        return output
 
 
     def checkplot(self, bname):
+        """Test if plot file exists"""
         fname = os.path.join(self.plotdir, bname)
         self.assertTrue(os.path.exists(fname), msg='%s missing' % fname)
 
-    def test_cli(self):
 
+    def test_cli(self):
         # create tutorial
-        self.err('-h', 'print information about')
-        self.err('--version', '.')
-        self.err('bla', 'invalid choice')
+        self.out('-h', 'print information about')
+        self.out('--version', '.')
+        self.out('bla', 'invalid choice')
         if not self.permanent_tempdir:
-            self.err('info', "No such file or directory: 'conf.json'")
+            self.out('info', "No such file or directory: 'conf.json'")
         self.out('create', '')
         if not self.permanent_tempdir:
             self.out('info', 'Not found')
         self.out('create --tutorial')
-        self.run_('create --tutorial')
-        if self.verbose:
-            _replace_in_file('conf.json', 'conf.json',
-                             '#"verbose"', '"verbose"')
+        self.out('create --tutorial')
 
         # check basics
         _replace_in_file('conf.json', 'conf2.json', '"io"', '"io",')
-        self.err('-c conf2.json info', 'parsing the conf')
+        self.out('-c conf2.json info', 'parsing the conf')
         self.out('info', '3 stations')
         self.out('info stations', 'CX.PATCX..BHZ')
         self.out('info data', 'example_data/CX.PATCX')
@@ -125,17 +118,16 @@ class TestCase(unittest.TestCase):
         pr = self.out('print data CX.PATCX..BHZ 2010-02-03', '2010-02-03')
         self.out('print data CX.PATCX..BHZ 2010-034', '2010-02-03')
         self.out('print prepdata CX.PATCX..BHZ 2010-02-03 1', '864001 samples')
-        self.err('print data', 'seedid')
-        self.err('print prepdata CX.PATCX..BHZ 2010-02-03', 'corrid')
+        self.out('print data', 'seedid')
+        self.out('print prepdata CX.PATCX..BHZ 2010-02-03', 'corrid')
         _replace_in_file('conf.json', 'conf2.json', '"clip_factor"',
                          '"clip_set_zero": true, "clip_factor"')
         self.out('-c conf2.json print prepdata CX.PATCX..BHZ 2010-02-03 1a')
 
-        # use self.out instead of self.run_ for plots to not show warnings
         try:
             self.out('plot stations')
         except ImportError:
-            self.pbar.update(1)
+            pass
         else:
             self.checkplot('stations.png')
         self.out('plot data CX.PATCX..BHZ 2010-02-03')
@@ -166,17 +158,16 @@ def get_data(starttime, endtime, **smeta):
         pr2 = self.out('-c conf2.json print data CX.PATCX..BHZ 2010-02-03')
         self.assertEqual(pr, pr2)
 
-
         # check correlation
         t1 = time.time()
-        self.run_('correlate 1')
+        self.out('correlate 1')
         t2 = time.time()
         self.out('correlate 1 -v')
         t3 = time.time()
         if not self.permanent_tempdir:
             self.assertLess(t3 - t2, 0.5 * (t2 - t1))
-        self.run_('correlate auto')
-        self.run_('correlate 1a')
+        self.out('correlate auto')
+        self.out('correlate 1a')
         self.out('info', 'c1_s1d: 7 combs')
         self.out('info', 'c1a_s1d: 3 combs')
         self.out('info', 'cauto: 2 combs')
@@ -187,9 +178,9 @@ def get_data(starttime, endtime, **smeta):
         # check if correlation without parallel processing gives the same
         # result keys
         with self.assertWarnsRegex(UserWarning, 'only top level keys'):
-            self.run_('remove cauto/CX.PATCX-CX.PATCX')
-        self.run_('remove cauto')
-        self.run_('correlate auto --njobs 1')
+            self.out('remove cauto/CX.PATCX-CX.PATCX')
+        self.out('remove cauto')
+        self.out('correlate auto --njobs 1')
         cauto_info_seq = self.out('info cauto')
         self.assertEqual(cauto_info, cauto_info_seq)
 
@@ -215,32 +206,32 @@ def get_data(starttime, endtime, **smeta):
         self.checkplot(bname + '.BHN-.BHZ.png')
 
         # check stacking
-        self.run_('stack c1_s1d 2d')
+        self.out('stack c1_s1d 2d')
         self.out('info',  'c1_s1d_s2d: 7 combs')
-        self.run_('stack c1_s1d 2dm1d')
+        self.out('stack c1_s1d 2dm1d')
         self.out('info',  'c1_s1d_s2dm1d: 7 combs')
-        self.run_('stack c1_s1d 1')
-        self.run_('stack cauto 2')
+        self.out('stack c1_s1d 1')
+        self.out('stack cauto 2')
         self.out('info',  'cauto_s2')
-        self.run_('remove c1_s1d_s2dm1d c1_s1d_s1')
+        self.out('remove c1_s1d_s2dm1d c1_s1d_s1')
 
         # check stretching
         po = """--plot-options {"line_style":"k"}"""
-        self.run_('stretch c1_s1d/CX.PATCX-CX.PATCX 1')
-        self.run_('stretch c1_s1d 1')
-        self.run_('stretch cauto/CX.PATCX-CX.PATCX/.BHZ-.BHZ 2')
-        self.run_('stretch cauto 2')
-        self.run_('stretch cauto 2 --njobs 1')
-        self.run_('stretch cauto/CX.PATCX-CX.PATCX/.BHZ-.BHZ 2')
-        self.run_('plot c1_s1d_t1/CX.PATCX-CX.PB01 %s' % po)
-        self.err('plot cauto_t2 --plottype wiggle', 'not supported')
-        self.run_('plot cauto_t2')
+        self.out('stretch c1_s1d/CX.PATCX-CX.PATCX 1')
+        self.out('stretch c1_s1d 1')
+        self.out('stretch cauto/CX.PATCX-CX.PATCX/.BHZ-.BHZ 2')
+        self.out('stretch cauto 2')
+        self.out('stretch cauto 2 --njobs 1')
+        self.out('stretch cauto/CX.PATCX-CX.PATCX/.BHZ-.BHZ 2')
+        self.out('plot c1_s1d_t1/CX.PATCX-CX.PB01 %s' % po)
+        self.out('plot cauto_t2 --plottype wiggle', 'not supported')
+        self.out('plot cauto_t2')
         globexpr = os.path.join(self.plotdir, 'sim_mat_cauto_t2*.png')
         self.assertEqual(len(glob.glob(globexpr)), 6)
         globexpr = os.path.join(self.plotdir, 'sim_mat_c1_s1d_t1*.png')
         if not self.permanent_tempdir:
             self.assertEqual(len(glob.glob(globexpr)), 6)
-        self.run_('plot c1_s1d_t1')
+        self.out('plot c1_s1d_t1')
         self.assertEqual(len(glob.glob(globexpr)), 21)
         self.out('info', 'c1_s1d_t1: 7 combs')
         self.out('info cauto_t2', 'CX.PATCX-CX.PATCX/.BHZ-.BHZ')
@@ -249,13 +240,13 @@ def get_data(starttime, endtime, **smeta):
 
         # check export
         fname = 'dayplot.mseed'
-        self.run_('export data %s CX.PATCX..BHZ 2010-02-03' % fname)
+        self.out('export data %s CX.PATCX..BHZ 2010-02-03' % fname)
         self.assertTrue(os.path.exists(fname), msg='%s missing' % fname)
         fname = 'dayplot.mseed'
-        self.run_('export data %s CX.PATCX..BHZ 2010-02-03' % fname)
+        self.out('export data %s CX.PATCX..BHZ 2010-02-03' % fname)
         self.assertTrue(os.path.exists(fname), msg='%s missing' % fname)
         fname = 'some_auto_corrs.h5'
-        self.run_('export cauto/CX.PATCX-CX.PATCX %s --format H5' % fname)
+        self.out('export cauto/CX.PATCX-CX.PATCX %s --format H5' % fname)
         self.assertTrue(os.path.exists(fname), msg='%s missing' % fname)
 
         # check load (IPython mocked)

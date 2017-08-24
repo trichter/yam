@@ -2,7 +2,6 @@
 """Some utility functions"""
 
 from importlib import import_module
-import functools
 import logging
 import numbers
 import os
@@ -24,6 +23,10 @@ class YamError(Exception):
 
 
 class ParseError(YamError):
+    pass
+
+
+class ConfigError(YamError):
     pass
 
 

@@ -20,7 +20,8 @@ import obspy
 
 import yam.commands
 from yam.util import (_load_func, create_config,
-                      LOGLEVELS, LOGGING_DEFAULT_CONFIG, ParseError)
+                      LOGLEVELS, LOGGING_DEFAULT_CONFIG, ParseError,
+                      ConfigError)
 
 
 log = logging.getLogger('yam')
@@ -45,8 +46,8 @@ def configure_logging(loggingc, verbose=0, loglevel=3, logfile=None):
         loggingc['handlers']['console_tqdm']['level'] = LOGLEVELS[verbose]
         if logfile is None or loglevel == 0:
             del loggingc['handlers']['file']
-            loggingc['loggers']['yam']['handlers'] = ['console']
-            loggingc['loggers']['py.warnings']['handlers'] = ['console']
+            loggingc['loggers']['yam']['handlers'] = ['console_tqdm']
+            loggingc['loggers']['py.warnings']['handlers'] = ['console_tqdm']
         else:
             loggingc['handlers']['file']['level'] = LOGLEVELS[loglevel]
             loggingc['handlers']['file']['filename'] = logfile
@@ -128,11 +129,9 @@ def run(command, conf=None, tutorial=False, **args):
                 conf = json.load(f, cls=ConfigJSONDecoder)
         except ValueError as ex:
             msg = 'Error while parsing the configuration: %s' % ex
-            print(msg, file=sys.stderr)
-            sys.exit(1)
+            raise ConfigError(msg)
         except IOError as ex:
-            print(ex, file=sys.stderr)
-            sys.exit(1)
+            raise ConfigError(ex)
         # Populate args with conf, but prefer args
         conf.update(args)
         args = conf
@@ -330,3 +329,6 @@ def run_cmdline(args=None):
         run(**args)
     except ParseError as ex:
         p.error(ex)
+    except ConfigError as ex:
+        print(ex, file=sys.stderr)
+        sys.exit(1)
