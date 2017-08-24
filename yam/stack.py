@@ -24,7 +24,7 @@ def stack(stream, length=None, move=None):
             if (lensec % (24 * 3600) == 0 or
                     isinstance(length, str) and 'd' in length):
                 t1 = UTC(t1.year, t1.month, t1.day)
-            elif (lensec % 3600 == 0  or
+            elif (lensec % 3600 == 0 or
                     isinstance(length, str) and 'm' in length):
                 t1 = UTC(t1.year, t1.month, t1.day, t1.hour)
             t2 = max(t1, traces[-1].stats.endtime - lensec)

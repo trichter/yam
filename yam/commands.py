@@ -447,21 +447,12 @@ def plot(io, key, plottype=None, seedid=None, day=None, prep_kw={},
     else:
         plot_ = getattr(yam.imaging, 'plot_' + pt)
         if pt == 'corr_vs_dist':
-#            from yam.imaging import plot_corr_vs_dist
             fname2 = _get_fname(io, key)
             rootkey = _get_rootkey(key)
             stream = obspy.read(fname2, 'H5', group=rootkey + key)
             fname = bname + '_' + key.replace('/', '_')
             plot_(stream, fname, **kw)
         else:
-#            is_stretch = 't' in _analyze_key(key)
-#            if  pt == 'corr_vs_dist':
-#                from yam.imaging import plot_corr_vs_time as plot_
-#            elif not is_stretch and plottype == 'wiggle':
-#                from yam.imaging import plot_corr_vs_time_wiggle as plot_
-#            elif is_stretch and plottype is None:
-#                from yam.imaging import plot_sim_mat as plot_
-
             for task, res in _iterh5(key, io):
                 fname = bname + '_' + task.split('/', 2)[-1].replace('/', '_')
                 plot_(res, fname, **kw)

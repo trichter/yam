@@ -24,7 +24,7 @@ def stretch(stream, reftr=None, stretch=None, start=None, end=None,
         rel = np.round(stream[0].stats.dist / 1000 / time_windows_relative)
     if time_windows is not None and isinstance(time_windows[1], (float, int)):
         args = ((rel + np.array(time_windows[0])) * int(sr),
-               time_windows[1] * int(sr))
+                time_windows[1] * int(sr))
         tw_mat = time_windows_creation(*args)
     else:
         raise ValueError('Wrong format for time_window')
@@ -44,12 +44,12 @@ def stretch(stream, reftr=None, stretch=None, start=None, end=None,
             ref_data = reftr
 #        log.debug('calculate correlations and time shifts...')
         tse = time_stretch_estimate(
-                data, ref_trc=ref_data, tw=tw_mat, stretch_range=str_range,
-                stretch_steps=nstr, sides=sides)
+            data, ref_trc=ref_data, tw=tw_mat, stretch_range=str_range,
+            stretch_steps=nstr, sides=sides)
 #    else:
 #        assert len(tw_mat) == len(stretch)
 #        tses = []
-##        log.debug('calculate correlations and time shifts...')
+#        log.debug('calculate correlations and time shifts...')
 #        for i in range(len(tw_mat)):
 #            tw = tw_mat[i:i + 1]
 #            st = stretch[i]
@@ -84,4 +84,3 @@ def stretch(stream, reftr=None, stretch=None, start=None, end=None,
               'sampling_rate', 'dist', 'azi', 'baz'):
         result['attrs'][k] = stream[0].stats[k]
     return result
-

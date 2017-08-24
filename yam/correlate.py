@@ -143,7 +143,7 @@ def spectral_whitening(data, sr=None, smooth=None, filter=None,
         spec_ampl = ifftshift(smooth_func(fftshift(spec_ampl), smooth))
     # save guard against division by 0
     wl = waterlevel * np.mean(spec_ampl)
-    spec_ampl[spec_ampl<wl] = wl
+    spec_ampl[spec_ampl < wl] = wl
     spec /= spec_ampl
     if filter is not None:
         spec *= filter_resp(*filter, sr=sr, N=len(spec), whole=True)[1]
@@ -192,7 +192,7 @@ def get_data(smeta, data, data_format, day, overlap=0, edge=0,
     next_day = day + 24 * 3600
     if not isinstance(data, str):
         try:
-            stream = data(starttime=day-edge,
+            stream = data(starttime=day - edge,
                           endtime=next_day + overlap + edge, **smeta)
         except Exception as ex:
             log.debug('no data for %s %s: %s', day, smeta, str(ex))
@@ -206,9 +206,9 @@ def get_data(smeta, data, data_format, day, overlap=0, edge=0,
         t1 = stream[0].stats.starttime
         t2 = stream[-1].stats.endtime
         if t1 - day < 60:
-            fname = data.format(t=day-1, **smeta)
+            fname = data.format(t=day - 1, **smeta)
             try:
-                stream += obspy.read(fname, data_format, starttime=day-edge)
+                stream += obspy.read(fname, data_format, starttime=day - edge)
             except:
                 pass
         if next_day - t2 < 60:
@@ -235,7 +235,7 @@ def preprocess(stream, day, inventory,
     if time_norm_options is None:
         time_norm_options = {}
     if spectral_whitening_options is None:
-        spectral_whitening_options={}
+        spectral_whitening_options = {}
     if isinstance(normalization, str):
         normalization = [normalization]
     next_day = day + 24 * 3600
@@ -272,7 +272,7 @@ def preprocess(stream, day, inventory,
 
 def correlate(io, day, outkey,
               remove_response=False,
-              edge = 60,
+              edge=60,
               length=3600, overlap=1800,
               discard=None,
               only_auto_correlation=False,
@@ -312,7 +312,8 @@ def correlate(io, day, outkey,
                 {tr1.stats.station, tr2.stats.station})
                 for station_comb in station_combinations):
             continue
-        if component_combinations and (comps not in component_combinations and
+        if component_combinations and (
+                comps not in component_combinations and
                 comps[::-1] not in component_combinations):
             continue
         # calculate distance and azimuth
