@@ -26,13 +26,7 @@ ENTRY_POINTS = {
     'console_scripts': ['yam-runtests = yam.tests:run',
                         'yam = yam.main:run_cmdline']}
 
-REQUIRES = ['matplotlib', 'numpy', 'scipy',
-            'setuptools', 'obspy',
-            'tqdm', 'obspyh5']
-
-EXTRAS_REQUIRE = {
-    'doc': ['sphinx', 'alabaster'] # and decorator, obspy
-    }
+REQUIRES = ['h5py', 'numpy', 'obspy', 'obspyh5', 'scipy', 'setuptools', 'tqdm']
 
 CLASSIFIERS = [
     'Environment :: Console',
@@ -57,7 +51,6 @@ setup(name='yam',
       packages=find_packages(),
       package_dir={'yam': 'yam'},
       install_requires=REQUIRES,
-      extras_require=EXTRAS_REQUIRE,
       entry_points=ENTRY_POINTS,
       include_package_data=True,
       zip_safe=False,
