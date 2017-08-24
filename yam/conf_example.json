@@ -55,8 +55,8 @@
 "correlate": {
         "1": {  # Filter the inventory with ObsPy's select_inventory method (null or dict, see below)
         	       "filter_inventory": null,
-        	       # remove_response: null or true or dictionary passed to remove_response method
-                "remove_response": null,
+                # remove_response: if true options can be set with remove_reponse_options (see obspy.Stream.remove_response)
+                "remove_response": false,
                 # Start and end day for processing the correlations.
                 # The script will try to load data for all channels defined in the inventories
                 # (satisfying the conditions defined further down) and for all days inside this time period.
@@ -97,6 +97,7 @@
                 # This is also possible for the other configurations (e.g. "stretch").
                 "based_on": "1",
                 "filter": [0.5, 1],
+                "remove_response": true,
                 "normalization": ["clip", "spectral_whitening"],
                 "time_norm_options": {"clip_factor": 2},
                 "spectral_whitening_options": {"filter": [0.5, 1], "smooth": 0.5},

@@ -226,7 +226,8 @@ def get_data(smeta, data, data_format, day, overlap=0, edge=0,
 
 def preprocess(stream, day, inventory,
                overlap=0,
-               remove_response=None,
+               remove_response=False,
+               remove_response_options=None,
                filter=None,
                normalization=(),
                time_norm_options=None,
@@ -236,6 +237,8 @@ def preprocess(stream, day, inventory,
         time_norm_options = {}
     if spectral_whitening_options is None:
         spectral_whitening_options = {}
+    if remove_response_options is None:
+        remove_response_options = {}
     if isinstance(normalization, str):
         normalization = [normalization]
     next_day = day + 24 * 3600
@@ -245,9 +248,7 @@ def preprocess(stream, day, inventory,
         tr.detrend()
         check_and_phase_shift(tr)
     if remove_response:
-        if remove_response is True:
-            remove_response = {}
-        stream.remove_response(inventory, **remove_response)
+        stream.remove_response(inventory, **remove_response_options)
     for tr in stream:
         if filter is not None:
             _filter(tr, filter)
@@ -271,7 +272,6 @@ def preprocess(stream, day, inventory,
 
 
 def correlate(io, day, outkey,
-              remove_response=False,
               edge=60,
               length=3600, overlap=1800,
               discard=None,

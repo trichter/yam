@@ -6,7 +6,6 @@ from contextlib import redirect_stderr, redirect_stdout
 import glob
 import io
 import logging
-import importlib
 import os
 import shutil
 import sys
@@ -55,7 +54,6 @@ class TestCase(unittest.TestCase):
         total = 72 - 2 * self.permanent_tempdir
         self.pbar = tqdm.tqdm(total=total, desc='CLI tests passed')
 
-
     def out(self, cmd, text=None):
         """Test if text is in output of command"""
         # for TRAVIS use maximal two cores
@@ -88,12 +86,10 @@ class TestCase(unittest.TestCase):
             self.assertIn(text, output)
         return output
 
-
     def checkplot(self, bname):
         """Test if plot file exists"""
         fname = os.path.join(self.plotdir, bname)
         self.assertTrue(os.path.exists(fname), msg='%s missing' % fname)
-
 
     def test_cli(self):
         # create tutorial

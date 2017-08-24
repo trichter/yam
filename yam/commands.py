@@ -388,7 +388,8 @@ def load(io, key, seedid=None, day=None, do='return', prep_kw={},
             msg = 'seedid and day must be given for data or prepdata'
             raise ParseError(msg)
         if key == 'prepdata':
-            prep_keys = ('remove_response', 'filter', 'normalization',
+            prep_keys = ('remove_response', 'remove_response_options',
+                         'filter', 'normalization',
                          'time_norm_options', 'spectral_whitening_options',
                          'downsample')
             prep_kw = {k: prep_kw.get(k) for k in prep_keys}
