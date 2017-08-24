@@ -21,6 +21,7 @@ There are several alternatives around, namely [MSNoise](https://github.com/ROBel
 #### Installation
 
 Dependencies of `yam` are `obspy>=1.1 obspyh5 h5py`.
+Optional dependencies are `IPython` and `cartopy` or `basemap`.
 If you use anaconda installation is as easy as:
 
 ```
@@ -31,7 +32,16 @@ pip install yam
 ```
 
 After that, you can run the tests with `yam-runtests` and check if everything is installed properly.
+The dev-version of obspy can be used with:
 
+```
+conda --add channels conda-forge
+conda create -n yam python=3 obspy h5py
+source activate yam
+conda uninstall obspy
+pip install git+https://github.com/obspy/obspy.git
+pip install yam
+```
 
 #### Basic usage
 
