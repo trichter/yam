@@ -116,8 +116,10 @@ class TestCase(unittest.TestCase):
         self.out('print prepdata CX.PATCX..BHZ 2010-02-03 1', '864001 samples')
         self.out('print data', 'seedid')
         self.out('print prepdata CX.PATCX..BHZ 2010-02-03', 'corrid')
-        _replace_in_file('conf.json', 'conf2.json', '"clip_factor"',
-                         '"clip_set_zero": true, "clip_factor"')
+        # check remove_response on one day
+        _replace_in_file(
+            'conf.json', 'conf2.json', '{"clip_factor": 2},',
+            '{"clip_factor":2, "clip_set_zero":true},"remove_response":true,')
         self.out('-c conf2.json print prepdata CX.PATCX..BHZ 2010-02-03 1a')
 
         try:

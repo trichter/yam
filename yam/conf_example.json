@@ -96,16 +96,14 @@
         "1a": { # "based_on" loads configuration from another id and overwrites the given parameters.
                 # This is also possible for the other configurations (e.g. "stretch").
                 "based_on": "1",
-                "filter": [0.5, 1],
-                "remove_response": true,
+                "enddate": "2010-02-03",
                 "normalization": ["clip", "spectral_whitening"],
                 "time_norm_options": {"clip_factor": 2},
-                "spectral_whitening_options": {"filter": [0.5, 1], "smooth": 0.5},
+                "spectral_whitening_options": {"filter": [0.01, 0.5], "smooth": 0.5},
                 "station_combinations": ["PATCX-PB06"]
                 },
         "auto": {
                 "filter_inventory": {"station": "PATCX"},
-                "remove_response": true,
                 "startdate": "2010-02-01",
                 "enddate": "2010-02-14",
                 "length": 3600,
