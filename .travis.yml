@@ -34,7 +34,7 @@ install:
   - pip install --no-deps .
 script:
   - mkdir empty; cd empty; cp ../.coveragerc ./
-  - coverage run -m yam.tests -v
+  - coverage run -m yam.tests -v -n 2
 after_success:
   - coverage combine
   - bash <(curl -s https://codecov.io/bash)

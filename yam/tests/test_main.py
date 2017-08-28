@@ -31,6 +31,7 @@ class TestCase(unittest.TestCase):
         args = sys.argv[1:]
         self.verbose = '-v' in args
         self.permanent_tempdir = '-p' in args
+        self.njobs = args[args.index('-n') + 1] if '-n'  in args else None
         if self.permanent_tempdir:
             tempdir = os.path.join(tempfile.gettempdir(), 'yam_test')
             if os.path.exists(tempdir) and '-d' in args:
@@ -57,9 +58,9 @@ class TestCase(unittest.TestCase):
     def out(self, cmd, text=None):
         """Test if text is in output of command"""
         # for TRAVIS use maximal two cores
-        if (os.getenv('TRAVIS') and '--njobs' not in cmd and
+        if (self.njobs and '--njobs' not in cmd and
                 cmd.split()[0] in ('correlate', 'stretch')):
-            cmd = cmd + ' --njobs 2'
+            cmd = cmd + ' --njobs ' + self.njobs
         # disabling the logger is necessary, because the logging
         # configuration cannot be changed easily on subsequent calls
         # of yam in this test suite

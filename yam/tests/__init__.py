@@ -1,12 +1,13 @@
 """
 Tests for the rf package.
 
-yam-runtests [-h] [-v] [-p] [-d]
+yam-runtests [-h] [-v] [-p] [-d] [-n num]
 
 -h    short help
 -v    be verbose
 -p    use permanent tempdir
 -d    empty permanent tempdir at start
+-n num   maximal number of cores to use (default: all)
 """
 
 from pkg_resources import resource_filename
