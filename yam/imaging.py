@@ -18,7 +18,7 @@ import yam.stack
 def _get_times_no_data(x):
     dx = np.median(np.diff(x))
     try:
-        index = np.argwhere(np.diff(x) > dx)[0]
+        index = np.argwhere(np.diff(x) > dx)[:, 0]
     except IndexError:
         return {}
     tl = OrderedDict()
@@ -159,6 +159,7 @@ def plot_corr_vs_time(
     data2 = np.transpose(data2)
     mesh = ax.pcolormesh(lag_times2, times2, data2, cmap=cmap,
                          vmin=-vmax, vmax=vmax)
+
     fig.colorbar(mesh, shrink=0.5)
     label = os.path.basename(fname)
     ax.annotate(label, (0, 1), (10, 10), 'axes fraction', 'offset points',
