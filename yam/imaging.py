@@ -134,14 +134,16 @@ def plot_corr_vs_time_wiggle(
 
 def plot_corr_vs_time(
         stream, fname, figsize=(10, 5), ext='.png',
-        vmax=None, cmap='RdBu_r', trim=None):
+        vmax=None, cmap='RdBu_r', trim=None,
+        show_stack=True, line_style='k', line_width=1):
     ids = {_corr_id(tr) for tr in stream}
     if len(ids) != 1:
         warn('Different ids in stream: %s' % ids)
     stream.sort(['starttime'])
     times = [date2num(tr.stats.starttime.datetime) for tr in stream]
     fig = plt.figure(figsize=figsize)
-    ax = fig.add_subplot(111)
+    ax = fig.add_axes([0.15, 0.1, 0.75, 0.75])
+    cax = fig.add_axes([0.91, 0.375, 0.008, 0.25])
     for tr in stream:
         st = tr.stats.starttime
         mid = st + (tr.stats.endtime - st) / 2
@@ -158,15 +160,24 @@ def plot_corr_vs_time(
     data2 = _add_value(np.transpose(data), no_data, value=0, masked=True)
     data2 = np.transpose(data2)
     mesh = ax.pcolormesh(lag_times2, times2, data2, cmap=cmap,
-                         vmin=-vmax, vmax=vmax)
-
-    fig.colorbar(mesh, shrink=0.5)
-    label = os.path.basename(fname)
-    ax.annotate(label, (0, 1), (10, 10), 'axes fraction', 'offset points',
-                annotation_clip=False, va='bottom')
+                          vmin=-vmax, vmax=vmax)
+    fig.colorbar(mesh, cax)
     ax.set_ylabel('date')
     ax.set_xlabel('time (s)')
     ax.yaxis_date()
+    ax_ano = ax
+    if show_stack:
+        ax2 = fig.add_axes([0.15, 0.85, 0.75, 0.05], sharex=ax)
+        stack = yam.stack.stack(stream)
+        ax2.plot(lag_times, stack[0].data, line_style, lw=line_width)
+        ax2.set_ylim(-vmax, vmax)
+        ax2.set_ylabel('stack')
+        plt.setp(ax2.get_xticklabels(), visible=False)
+        ax_ano = ax2
+    ax.set_xlim(lag_times[0], lag_times[-1])
+    label = os.path.basename(fname)
+    ax_ano.annotate(label, (0, 1), (10, 10), 'axes fraction', 'offset points',
+                    annotation_clip=False, va='bottom')
     fig.savefig(fname + ext)
 
 
