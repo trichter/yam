@@ -197,7 +197,7 @@ def plot_sim_mat(res, bname, figsize=(10, 5), ext='.png',
         x2 = _align_values_for_pcolormesh(x)
         y2 = _align_values_for_pcolormesh(copy(res['stretch_values']))
         if vmax is None:
-            vmax = 0.8 * np.max(data)
+            vmax = np.max(data)
         data = _add_value(data, no_data, value=0, masked=True)
         mesh = ax.pcolormesh(x2, y2, data, cmap=cmap, vmin=0, vmax=vmax)
         if line_style is not None:
