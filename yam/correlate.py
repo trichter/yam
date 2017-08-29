@@ -232,7 +232,7 @@ def preprocess(stream, day, inventory,
                normalization=(),
                time_norm_options=None,
                spectral_whitening_options=None,
-               downsample=10):
+               downsample=None):
     if time_norm_options is None:
         time_norm_options = {}
     if spectral_whitening_options is None:
