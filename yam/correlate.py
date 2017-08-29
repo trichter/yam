@@ -11,7 +11,7 @@ from scipy.fftpack import fft, ifft, fftshift, ifftshift, next_fast_len
 from scipy.signal import freqz, iirfilter, hilbert
 
 from yam._from_msnoise import check_and_phase_shift
-from yam.util import _filter, IterTime, smooth as smooth_func
+from yam.util import _filter, IterTime, smooth as smooth_func, _time2sec
 import yam.stack
 
 
@@ -283,6 +283,8 @@ def correlate(io, day, outkey,
               stack='1day',
               **preprocessing_kwargs):
     inventory = io['inventory']
+    length = _time2sec(length)
+    overlap = _time2sec(overlap)
     if not keep_correlations and stack is None:
         raise ValueError('keep_correlation is False and stack is None')
     components = set(''.join(component_combinations))
