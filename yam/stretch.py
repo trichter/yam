@@ -11,7 +11,7 @@ log = logging.getLogger('yam.stretch')
 
 
 def stretch(stream, reftr=None, stretch=None, start=None, end=None,
-            relative='middle', str_range=0.1, nstr=100, time_windows=None,
+            relative='middle', str_range=10, nstr=100, time_windows=None,
             time_windows_relative=None, sides='right'):
     """
     time_windows:
@@ -43,8 +43,9 @@ def stretch(stream, reftr=None, stretch=None, start=None, end=None,
         else:
             ref_data = reftr
 #        log.debug('calculate correlations and time shifts...')
+        # convert str_range from % to decimal
         tse = time_stretch_estimate(
-            data, ref_trc=ref_data, tw=tw_mat, stretch_range=str_range,
+            data, ref_trc=ref_data, tw=tw_mat, stretch_range=str_range / 100,
             stretch_steps=nstr, sides=sides)
 #    else:
 #        assert len(tw_mat) == len(stretch)
@@ -66,10 +67,12 @@ def stretch(stream, reftr=None, stretch=None, start=None, end=None,
     times = np.array([str(tr.stats.starttime)[:19] for tr in stream],
                      dtype='S19')
     ltw1 = rel + np.array(time_windows[0])
-    result = {'sim_mat': tse['sim_mat'],
-              'stretch_values': tse['second_axis'],
+    # convert streching to velocity change
+    # -> minus at several places
+    result = {'sim_mat': tse['sim_mat'][:, ::-1, :],
+              'velchange_values': tse['second_axis'],
               'times': times,
-              'stretch_vs_time': tse['value'],
+              'velchange_vs_time': -tse['value'],
               'corr_vs_time': tse['corr'],
               'lag_time_windows': np.transpose([ltw1, ltw1 + time_windows[1]]),
               'attrs': {'nstr': nstr,

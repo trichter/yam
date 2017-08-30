@@ -181,10 +181,11 @@ def plot_corr_vs_time(
     fig.savefig(fname + ext)
 
 
-def plot_sim_mat(res, bname, figsize=(10, 5), ext='.png',
+def plot_sim_mat(res, bname=None, figsize=(10, 5), ext='.png',
                  vmax=None, cmap='hot_r',
-                 line_style=None):
+                 show_line=False, line_style='b', line_width=2):
     labelexpr = '{}_tw{:02d}_{:05.1f}s-{:05.1f}s'
+    figs = []
     for itw, tw in enumerate(res['lag_time_windows']):
         fig = plt.figure(figsize=figsize)
         ax = fig.add_subplot(111)
@@ -195,21 +196,26 @@ def plot_sim_mat(res, bname, figsize=(10, 5), ext='.png',
         x = _add_value(x, no_data)
         x = [t.datetime for t in x]
         x2 = _align_values_for_pcolormesh(x)
-        y2 = _align_values_for_pcolormesh(copy(res['stretch_values']))
+        y2 = _align_values_for_pcolormesh(copy(res['velchange_values']))
         if vmax is None:
             vmax = np.max(data)
         data = _add_value(data, no_data, value=0, masked=True)
         mesh = ax.pcolormesh(x2, y2, data, cmap=cmap, vmin=0, vmax=vmax)
-        if line_style is not None:
-            s = res['stretch_vs_time'][:, itw]
+        if show_line:
+            s = res['velchange_vs_time'][:, itw]
             s = _add_value(s, no_data, value=0, masked=True)
-            ax.plot(x, s, line_style)
+            ax.plot(x, s, line_style, lw=line_width)
         ax.set_xlabel('date')
-        ax.set_ylabel('stretch')
+        ax.set_ylabel('velocity change (%)')
         fig.autofmt_xdate()
         fig.colorbar(mesh, shrink=0.5)
-        fname = labelexpr.format(bname, itw, *tw)
+        bname2 = 'sim_mat' if bname is None else bname
+        fname = labelexpr.format(bname2, itw, *tw)
         label = os.path.basename(fname)
         ax.annotate(label, (0, 1), (10, 10), 'axes fraction', 'offset points',
                     annotation_clip=False, va='bottom')
-        fig.savefig(fname + ext)
+        if bname is not None:
+            fig.savefig(fname + ext)
+        figs.append(fig)
+    return figs
+

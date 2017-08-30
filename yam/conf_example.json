@@ -141,11 +141,11 @@
 
 "stretch": {
         "1": {  # filter correlations
-        	       "filter": [0.02, 0.4],
-        	       # stretching range (here from -10% to 10%)
-                "str_range": 0.1,
+        	    "filter": [0.02, 0.4],
+        	    # stretching range in % (here from -10% to 10%)
+                "str_range": 10,
                 # number of stretching samples
-                "nstr": 100,
+                "nstr": 101,
                 # different lag time windows to analyze
                 # (first entry starttimes in seconds, second entry: length in seconds, here three different time windows)
                 "time_windows": [[10, 20, 30], 10],
@@ -155,8 +155,8 @@
                 # analyze this side of the correlation ("left", "right", "both")
                 "sides": "both"
                 },
-        "2": {  "str_range": 0.02,
-                "nstr": 100,
+        "2": {  "str_range": 1,
+                "nstr": 101,
                 "time_windows": [[5, 10, 15], 5],
                 "time_windows_relative": null,  # relative to middle (0s lag time)
                 "sides": "right"

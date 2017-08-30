@@ -23,11 +23,10 @@ from yam.util import _analyze_key, _filter, IterTime, ParseError
 
 log = logging.getLogger('yam.commands')
 
-# group will start with waveforms (default of obspyh5)
 INDEX = ('{key}/{network1}.{station1}-{network2}.{station2}/'
          '{location1}.{channel1}-{location2}.{channel2}/'
          '{starttime.datetime:%Y-%m-%dT%H:%M}')
-INDEX_STRETCH = ('stretch/{key}/{network1}.{station1}-{network2}.{station2}/'
+INDEX_STRETCH = ('{key}/{network1}.{station1}-{network2}.{station2}/'
                  '{location1}.{channel1}-{location2}.{channel2}')
 obspyh5.set_index(INDEX)
 
@@ -105,7 +104,10 @@ def _get_existent(fname, root, level):
             g = f[root]
         except KeyError:
             return []
-        level_reached = g.name.count('/')
+        if root == '/':
+            level_reached = 0
+        else:
+            level_reached = g.name.count('/')
         visit(g, level - level_reached)
     return done
 
@@ -135,13 +137,13 @@ def start_correlate(io,
     # combination, it will be marked as done
     done_tasks = None
     if kwargs.get('stack') is not None:
-        key2 = 'waveforms/' + kwargs['outkey'] + '_s' + kwargs['stack']
+        key2 = kwargs['outkey'] + '_s' + kwargs['stack']
         done_tasks = [UTC(t[-16:-6]) for t in
-                      _get_existent(io['stack'], key2, 5)]
+                      _get_existent(io['stack'], key2, 4)]
     if kwargs.get('keep_correlations', False):
-        key2 = 'waveforms/' + kwargs['outkey']
+        key2 = kwargs['outkey']
         done_tasks2 = [UTC(t[-16:-6]) for t in
-                       _get_existent(io['corr'], key2, 5)]
+                       _get_existent(io['corr'], key2, 4)]
         if done_tasks is None:
             done_tasks = done_tasks2
         else:
@@ -154,11 +156,9 @@ def start_correlate(io,
 
 def start_stack(io, key, outkey, subkey='', **kwargs):
     fname = io['stack'] if 's' in _analyze_key(key) else io['corr']
-    rootkey1 = 'waveforms/' + key
-    rootkey2 = 'waveforms/' + outkey
-    tasks = _get_existent(fname, rootkey1 + subkey, 4)
-    done_tasks = [t.replace(rootkey2, rootkey1) for t in
-                  _get_existent(io['stack'], rootkey2 + subkey, 4)]
+    tasks = _get_existent(fname, key + subkey, 3)
+    done_tasks = [t.replace(outkey, key) for t in
+                  _get_existent(io['stack'], outkey + subkey, 3)]
     tasks = _todo_tasks(tasks, done_tasks)
     for task in tqdm.tqdm(tasks, total=len(tasks)):
         stream = obspy.read(fname, 'H5', group=task)
@@ -181,11 +181,10 @@ def stretch_wrapper(groupname, fname, fname_stretch, outkey, filter=None,
 
 def start_stretch(io, key, subkey='', njobs=None, **kwargs):
     fname = _get_fname(io, key)
-    rootkey1 = 'waveforms/' + key
-    rootkey2 = 'stretch/' + kwargs['outkey']
-    tasks = _get_existent(fname, rootkey1 + subkey, 4)
-    done_tasks = [t.replace(rootkey2, rootkey1) for t in
-                  _get_existent(io['stretch'], rootkey2 + subkey, 4)]
+    outkey = kwargs['outkey']
+    tasks = _get_existent(fname, key + subkey, 3)
+    done_tasks = [t.replace(outkey, key) for t in
+                  _get_existent(io['stretch'], outkey + subkey, 3)]
     tasks = _todo_tasks(tasks, done_tasks)
     do_work = functools.partial(stretch_wrapper, fname=fname,
                                 fname_stretch=io['stretch'], **kwargs)
@@ -209,17 +208,16 @@ def _print_info_helper(key, io):
     print2 = _get_print2()
     is_stretch = key == 'tstretch'
     fname = _get_fname(io, key)
-    rootkey = _get_rootkey(key)
-    keys = _get_existent(fname, rootkey, 2)  # 2, 4, 5
+    keys = _get_existent(fname, '/', 1)  # 1, 3, 4
     if len(keys) == 0:
         print2('None')
     for key in sorted(keys):
-        keys2 = _get_existent(fname, key, 4)
+        keys2 = _get_existent(fname, key, 3)
         subkey = key.split('/')[-1]
         if is_stretch:
             o = '%s: %d combs' % (subkey, len(keys2))
         else:
-            keys3 = _get_existent(fname, key, 5)
+            keys3 = _get_existent(fname, key, 4)
             o = ('%s: %d combs, %d corrs' %
                  (subkey, len(keys2), len(keys3)))
         print2(o)
@@ -239,15 +237,10 @@ def _get_fname(io, key):
     return fname
 
 
-def _get_rootkey(key):
-    return 'stretch/' if 't' in _analyze_key(key) else 'waveforms/'
-
-
 def _iterh5(key, io):
     is_stretch = 't' in _analyze_key(key)
     fname = _get_fname(io, key)
-    rootkey = _get_rootkey(key)
-    tasks = _get_existent(fname, rootkey + key, 4)
+    tasks = _get_existent(fname, key, 3)
     for task in tasks:
         if is_stretch:
             res = read_stretch(fname, task)
@@ -260,9 +253,8 @@ def _iterh5(key, io):
 def _load_obj(what, io, key):
     is_stretch = 't' in _analyze_key(key)
     fname = _get_fname(io, key)
-    rootkey = _get_rootkey(key)
-    level = 4 if is_stretch else 5
-    keys2 = _get_existent(fname, rootkey + key, level)
+    level = 3 if is_stretch else 4
+    keys2 = _get_existent(fname, key, level)
     if what == 'info':
         return '\n'.join(keys2)
     if is_stretch:
@@ -276,11 +268,11 @@ def _load_obj(what, io, key):
             return '\n\n'.join(out)
     else:
         if what == 'print':
-            res = obspy.read(fname, 'H5', headonly=True, group=rootkey + key)
+            res = obspy.read(fname, 'H5', headonly=True, group=key)
             res.sort()
             return res.__str__(extended=True)
         else:
-            res = obspy.read(fname, 'H5', group=rootkey + key)
+            res = obspy.read(fname, 'H5', group=key)
     assert what == 'load'
     return res
 
@@ -449,13 +441,12 @@ def plot(io, key, plottype=None, seedid=None, day=None, prep_kw={},
         plot_ = getattr(yam.imaging, 'plot_' + pt)
         if pt == 'corr_vs_dist':
             fname2 = _get_fname(io, key)
-            rootkey = _get_rootkey(key)
-            stream = obspy.read(fname2, 'H5', group=rootkey + key)
+            stream = obspy.read(fname2, 'H5', group=key)
             fname = bname + '_' + key.replace('/', '_')
             plot_(stream, fname, **kw)
         else:
             for task, res in _iterh5(key, io):
-                fname = bname + '_' + task.split('/', 2)[-1].replace('/', '_')
+                fname = bname + task.replace('/', '_')
                 plot_(res, fname, **kw)
     if show:
         from matplotlib.pyplot import show
@@ -464,13 +455,9 @@ def plot(io, key, plottype=None, seedid=None, day=None, prep_kw={},
 
 def remove(io, keys):
     for key in keys:
-        subkey = ''
-        if '/' in key:
-            key, subkey = key.split('/', 1)
-        if subkey != '':
+        if '/' in key and key.split('/', 1) != '':
             from warnings import warn
             warn('It is highly encouraged to delete only top level keys')
         fname = _get_fname(io, key)
-        rootkey = _get_rootkey(key)
         with h5py.File(fname, 'a') as f:
-            del f[rootkey + '/' + key + '/' + subkey]
+            del f[key]

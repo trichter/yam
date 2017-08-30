@@ -1,4 +1,7 @@
-dev:
+v0.2.0:
+  * remove unnecessary "root" group in HDF5 files
+  * change stretch to velocity change inside dictionary returned by read_stretch (sign change)
+  * change unit of str_range to %
   * corr_vs_time plot: allow to plot stack at top
   * allow strings for length and overlap option in correlate config
   * fix: correctly plot gaps in corr_vs_time and sim_mat plots

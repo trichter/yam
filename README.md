@@ -53,10 +53,10 @@ The processing commands are `correlate`, `stack` and `stretch`.
 `info`, `print`, `load` and `plot` commands allow to inspect correlations, stacks and stretching results as well as preprocessed data and other aspects.
 
 Correlations, corresponding stacks and stretching results are saved in HDF5 files.
-The indices inside the HDF5 files are the following:
+The indices inside the HDF5 files are the following (first for correlations, second for stretching results):
 ```
-'/waveforms/{key}/{network1}.{station1}-{network2}.{station2}/{location1}.{channel1}-{location2}.{channel2}/{starttime.datetime:%Y-%m-%dT%H:%M}'
-'/stretch/{key}/{network1}.{station1}-{network2}.{station2}/{location1}.{channel1}-{location2}.{channel2}'
+'{key}/{network1}.{station1}-{network2}.{station2}/{location1}.{channel1}-{location2}.{channel2}/{starttime.datetime:%Y-%m-%dT%H:%M}'
+'{key}/{network1}.{station1}-{network2}.{station2}/{location1}.{channel1}-{location2}.{channel2}'
 ```
 
 The strings are expanded with the corresponding metadata. Several tools are available for analysing the contents of the HDF5 files, e.g. `h5ls` or `hdfview`.
@@ -88,7 +88,7 @@ yam correlate 1        # correlates data with corr configuration 1
 yam correlate 1        # should finish fast, because everything is already calculated
 yam correlate auto     # correlate data with another configuration suitable for auto-correlations
 yam plot c1_s1d --plottype vs_dist  # plot correlation versus distance
-yam plot cauto --plot-options '{"trim": [0, 10], "figsize": [5, 10]}'  # plot auto-correlations versus time and change some options
+yam plot cauto --plot-options '{"trim": [0, 10]}'  # plot auto-correlations versus time and change some options
                                                                        # ("wiggle" plot also possible)
 yam stack c1_s1d 3dm1d       # stack 1 day correlations with a moving stack of 3 days
 yam stack cauto 2            # stack auto-correlations with stack configid 2
@@ -96,7 +96,8 @@ yam stack cauto 2            # stack auto-correlations with stack configid 2
 yam stretch c1_s1d_s3dm1d 1  # stretch the stacked data with stretch configuration 1
 yam stretch cauto_s2 2       # stretch the stacked auto-correlations with another stretch configuration
 yam info                     # find out about the keys which are already in use
-yam plot cauto_s2_t2 --show  # plot all similarity matrices for this processing chain and display them on screen (zoom etc.)
+yam plot cauto_t2            # plot similarity matrices for the given processing chain
+yam plot cauto_s2_t2 --plot-options '{"show_line": true}' --show  # plot all similarity matrices for this processing chain and display them on screen (zoom etc.)
 yam plot c1_s1d_s3dm1d_t1/CX.PATCX-CX.PB01  # plot similarity matrices, but only for one station combination
                                             # (restricting the group is also possible for stacking and stretching)
 ```
@@ -121,7 +122,7 @@ stream = read('corr.h5', 'H5')
 stream = read('stack.h5', 'H5', include_only=dict(key='c1_s1d', network1='CX', station1='PATCX',
                                                   network2='CX', station2='PB01'))
 # or specify the group explicitly
-stream = read('stack.h5', 'H5', group='waveforms/c1_s1d/')
+stream = read('stack.h5', 'H5', 'c1_s1d')
 
 # read the stretching results into a dictionary
 stretch_result = read_stretch('stretch.h5', 'c1_s1d_t1')

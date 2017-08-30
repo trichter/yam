@@ -52,7 +52,7 @@ class TestCase(unittest.TestCase):
 
         self.plotdir = os.path.join(self.tempdir, 'plots')
         self.script = load_entry_point('yam', 'console_scripts', 'yam')
-        total = 72 - 2 * self.permanent_tempdir
+        total = 71 - 2 * self.permanent_tempdir
         self.pbar = tqdm.tqdm(total=total, desc='CLI tests passed')
 
     def out(self, cmd, text=None):
@@ -172,7 +172,7 @@ def get_data(starttime, endtime, **smeta):
         self.out('info', 'cauto: 2 combs')
         cauto_info = self.out('info cauto', 'CX.PATCX/.BHZ-.BHZ/2010-02-03')
         self.out('info c1_s1d/CX.PB06-CX.PB06/.BHZ-.BHZ', 'CX.PB06-CX.PB06')
-        self.out('print cauto', '601 samples')
+        self.out('print cauto', '1201 samples')
         self.out('print c1_s1d/CX.PB06-CX.PB06/.BHZ-.BHZ', '11 Trace')
         # check if correlation without parallel processing gives the same
         # result keys
@@ -184,7 +184,7 @@ def get_data(starttime, endtime, **smeta):
         self.assertEqual(cauto_info, cauto_info_seq)
 
         # check plots of correlation
-        po = """--plot-options {"trim":[0,10],"figsize":[5,10]}"""
+        po = """--plot-options {"trim":[0,10],"figsize":[10,10]}"""
         self.out('plot c1_s1d --plottype vs_dist')
         self.checkplot('corr_vs_dist_c1_s1d_ZZ.png')
         self.out('plot c1_s1d/CX.PATCX-CX.PB01 --plottype wiggle')
@@ -215,7 +215,7 @@ def get_data(starttime, endtime, **smeta):
         self.out('remove c1_s1d_s2dm1d c1_s1d_s1')
 
         # check stretching
-        po = """--plot-options {"line_style":"k"}"""
+        po = """--plot-options {"show_line":true}"""
         self.out('stretch c1_s1d/CX.PATCX-CX.PATCX 1')
         self.out('stretch c1_s1d 1')
         self.out('stretch cauto/CX.PATCX-CX.PATCX/.BHZ-.BHZ 2')
