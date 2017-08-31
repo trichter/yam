@@ -114,7 +114,7 @@ Create the example configuration with `yam create` and adapt it to your needs. A
 
 ```py
 from obspy import read
-from yam import read_stretch
+from yam import read_dicts
 
 # read a whole file of correlations
 stream = read('corr.h5', 'H5')
@@ -125,7 +125,7 @@ stream = read('stack.h5', 'H5', include_only=dict(key='c1_s1d', network1='CX', s
 stream = read('stack.h5', 'H5', 'c1_s1d')
 
 # read the stretching results into a dictionary
-stretch_result = read_stretch('stretch.h5', 'c1_s1d_t1')
+stretch_result = read_dicts('stretch.h5', 'c1_s1d_t1')
 ```
 
 

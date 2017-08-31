@@ -183,10 +183,13 @@ def plot_corr_vs_time(
 
 def plot_sim_mat(res, bname=None, figsize=(10, 5), ext='.png',
                  vmax=None, cmap='hot_r',
-                 show_line=False, line_style='b', line_width=2):
+                 show_line=False, line_style='b', line_width=2,
+                 time_window=None):
     labelexpr = '{}_tw{:02d}_{:05.1f}s-{:05.1f}s'
     figs = []
     for itw, tw in enumerate(res['lag_time_windows']):
+        if time_window is not None and itw != time_window:
+            continue
         fig = plt.figure(figsize=figsize)
         ax = fig.add_subplot(111)
         np.transpose(res['sim_mat'][:, :, itw])
@@ -217,5 +220,9 @@ def plot_sim_mat(res, bname=None, figsize=(10, 5), ext='.png',
         if bname is not None:
             fig.savefig(fname + ext)
         figs.append(fig)
-    return figs
+    if tw is None:
+        return figs
+    elif len(figs) == 1:
+        return figs[0]
+
 

@@ -6,6 +6,7 @@ import obspy
 
 from yam._from_miic import time_windows_creation, time_stretch_estimate
 from yam.util import get_data_window
+import yam.stack
 
 log = logging.getLogger('yam.stretch')
 
@@ -35,6 +36,9 @@ def stretch(stream, reftr=None, stretch=None, start=None, end=None,
         raise ValueError(msg % (data.shape[1], np.min(tw_mat), np.max(tw_mat)))
     data[np.isnan(data)] = 0  # bug fix
     data[np.isinf(data)] = 0
+    if reftr is None:
+        reftr = yam.stack.stack(stream)[0]
+
     if reftr != 'alternative':
         if hasattr(reftr, 'stats'):
             assert reftr.stats.sampling_rate == sr
@@ -70,9 +74,9 @@ def stretch(stream, reftr=None, stretch=None, start=None, end=None,
     # convert streching to velocity change
     # -> minus at several places
     result = {'sim_mat': tse['sim_mat'][:, ::-1, :],
-              'velchange_values': tse['second_axis'],
+              'velchange_values': -tse['second_axis'][::-1] * 100,
               'times': times,
-              'velchange_vs_time': -tse['value'],
+              'velchange_vs_time': -tse['value'] * 100,
               'corr_vs_time': tse['corr'],
               'lag_time_windows': np.transpose([ltw1, ltw1 + time_windows[1]]),
               'attrs': {'nstr': nstr,

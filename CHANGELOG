@@ -1,4 +1,5 @@
 v0.2.0:
+  * rename read_stretch to read_dicts
   * remove unnecessary "root" group in HDF5 files
   * change stretch to velocity change inside dictionary returned by read_stretch (sign change)
   * change unit of str_range to %

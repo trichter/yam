@@ -15,6 +15,7 @@ from obspy.core import UTCDateTime as UTC
 import obspyh5
 import tqdm
 
+import yam
 from yam.correlate import correlate
 import yam.stack
 import yam.stretch
@@ -41,20 +42,30 @@ def _write_stream(queue):
             break
 
 
+def write_dict(dict_, fname, mode='a'):
+    with h5py.File(fname, mode=mode) as f:
+        f.attrs['file_format_stretch'] = 'yam'
+        f.attrs['version_stretch'] = yam.__version__
+        if 'index_stretch' not in f.attrs:
+            index = f.attrs['index_stretch'] = INDEX_STRETCH
+        else:
+            index = f.attrs['index_stretch']
+        attrs = dict_['attrs']
+        index = index.format(**attrs)
+        group = f.require_group(index)
+        for key, val in attrs.items():
+            group.attrs[key] = val
+        for key, val in dict_.items():
+            if key not in ('attrs', ):
+                group.create_dataset(key, data=val)
+
+
 def _write_stretch(queue):
     while True:
         args = queue.get()
         if len(args) == 2:
             stretchres, fname = args
-            attrs = stretchres['attrs']
-            with h5py.File(fname, 'a') as f:
-                index = INDEX_STRETCH.format(**attrs)
-                group = f.require_group(index)
-                for key, val in attrs.items():
-                    group.attrs[key] = val
-                for key, val in stretchres.items():
-                    if key not in ('attrs', ):
-                        group.create_dataset(key, data=val)
+            write_dict(stretchres, fname)
         else:
             break
 
@@ -173,8 +184,7 @@ def stretch_wrapper(groupname, fname, fname_stretch, outkey, filter=None,
     stream = obspy.read(fname, 'H5', group=groupname)
     if filter:
         _filter(stream, filter)
-    reftr = yam.stack.stack(stream)[0]
-    stretchres = yam.stretch.stretch(stream, reftr, **kwargs)
+    stretchres = yam.stretch.stretch(stream, **kwargs)
     stretchres['attrs']['key'] = outkey
     stretch_wrapper.q.put((stretchres, fname_stretch))
 
@@ -191,36 +201,46 @@ def start_stretch(io, key, subkey='', njobs=None, **kwargs):
     start_parallel_jobs(tasks, do_work, _write_stretch, njobs=njobs)
 
 
-def read_stretch(fname, groupname):
+def _read_dict(group):
     res = {'attrs': {}}
-    with h5py.File(fname) as f:
-        group = f[groupname]
-        for key, val in group.attrs.items():
-            res['attrs'][key] = val
-        for key, val in group.items():
-            if key not in ('attrs'):
-                res[key] = val[:]
-        res['times'] = [UTC(t) for t in res['times']]
+    for key, val in group.attrs.items():
+        res['attrs'][key] = val
+    for key, val in group.items():
+        if key not in ('attrs'):
+            res[key] = val[:]
+    res['times'] = [UTC(t) for t in res['times']]
+    res['group'] = group.name
     return res
 
 
-def _print_info_helper(key, io):
-    print2 = _get_print2()
-    is_stretch = key == 'tstretch'
+def _iter_dicts(fname, groupname='/', level=3):
+    tasks = _get_existent(fname, groupname, level)
+    with h5py.File(fname) as f:
+        for task in tasks:
+            yield task, _read_dict(f[task])
+
+def read_dicts(fname, groupname='/', level=3):
+    return [obj[1] for obj in _iter_dicts(fname, groupname, level)]
+
+
+def _iter_streams(fname, groupname='/', level=3):
+    tasks = _get_existent(fname, groupname, level)
+    for task in tasks:
+        stream = obspy.read(fname, 'H5', group=task)
+        yield task, stream
+
+
+def _iter_h5(io, key, level=3):
+    is_stretch = 't' in _analyze_key(key)
     fname = _get_fname(io, key)
-    keys = _get_existent(fname, '/', 1)  # 1, 3, 4
-    if len(keys) == 0:
-        print2('None')
-    for key in sorted(keys):
-        keys2 = _get_existent(fname, key, 3)
-        subkey = key.split('/')[-1]
-        if is_stretch:
-            o = '%s: %d combs' % (subkey, len(keys2))
-        else:
-            keys3 = _get_existent(fname, key, 4)
-            o = ('%s: %d combs, %d corrs' %
-                 (subkey, len(keys2), len(keys3)))
-        print2(o)
+    iter_ = _iter_dicts if is_stretch else _iter_streams
+    for obj in iter_(fname, key, level=level):
+        yield obj
+
+
+
+
+
 
 
 def _start_ipy(obj):
@@ -235,46 +255,6 @@ def _get_fname(io, key):
              else io['stack'] if 's' in _analyze_key(key)
              else io['corr'])
     return fname
-
-
-def _iterh5(key, io):
-    is_stretch = 't' in _analyze_key(key)
-    fname = _get_fname(io, key)
-    tasks = _get_existent(fname, key, 3)
-    for task in tasks:
-        if is_stretch:
-            res = read_stretch(fname, task)
-            yield task, res
-        else:
-            stream = obspy.read(fname, 'H5', group=task)
-            yield task, stream
-
-
-def _load_obj(what, io, key):
-    is_stretch = 't' in _analyze_key(key)
-    fname = _get_fname(io, key)
-    level = 3 if is_stretch else 4
-    keys2 = _get_existent(fname, key, level)
-    if what == 'info':
-        return '\n'.join(keys2)
-    if is_stretch:
-        res = {}
-        out = []
-        for k in keys2:
-            s = read_stretch(fname, k)
-            res[k] = s
-            out.append('%s\n%s' % (k, s))
-        if what == 'print':
-            return '\n\n'.join(out)
-    else:
-        if what == 'print':
-            res = obspy.read(fname, 'H5', headonly=True, group=key)
-            res.sort()
-            return res.__str__(extended=True)
-        else:
-            res = obspy.read(fname, 'H5', group=key)
-    assert what == 'load'
-    return res
 
 
 def _get_print2():
@@ -297,6 +277,25 @@ def _get_data_files(data):
     dataglob = dataglob.replace('22', '*').replace('11', '*')
     fnames = glob.glob(dataglob)
     return fnames
+
+
+def _print_info_helper(key, io):
+    print2 = _get_print2()
+    is_stretch = key == 'tstretch'
+    fname = _get_fname(io, key)
+    keys = _get_existent(fname, '/', 1)  # 1, 3, 4
+    if len(keys) == 0:
+        print2('None')
+    for key in sorted(keys):
+        keys2 = _get_existent(fname, key, 3)
+        subkey = key.split('/')[-1]
+        if is_stretch:
+            o = '%s: %d combs' % (subkey, len(keys2))
+        else:
+            keys3 = _get_existent(fname, key, 4)
+            o = ('%s: %d combs, %d corrs' %
+                 (subkey, len(keys2), len(keys3)))
+        print2(o)
 
 
 def info(io, key=None, subkey='', config=None, **unused_kwargs):
@@ -349,8 +348,10 @@ def info(io, key=None, subkey='', config=None, **unused_kwargs):
             for fname in sorted(fnames):
                 print2(fname)
     else:
-        obj = _load_obj('info', io, key + subkey)
-        for line in sorted(obj.splitlines()):
+        is_stretch = 't' in _analyze_key(key)
+        fname = _get_fname(io, key)
+        level = 3 if is_stretch else 4
+        for line in _get_existent(fname, key + subkey, level):
             print2(line)
 
 
@@ -388,7 +389,17 @@ def load(io, key, seedid=None, day=None, do='return', prep_kw={},
         obj = _load_data(seedid, day, io['data'], io.get('data_format'),
                          key, inventory=io['inventory'], **prep_kw)
     else:
-        obj = _load_obj('print' if do == 'print' else 'load', io, key)
+        is_stretch = 't' in _analyze_key(key)
+        fname_in = _get_fname(io, key)
+        if is_stretch:
+            obj = read_dicts(fname_in, key)
+            if do == 'print':
+                obj = '\n\n'.join(str(o) for o in obj)
+        else:
+            obj = obspy.read(fname_in, 'H5', group=key, headonly=do == 'print')
+            obj.sort()
+            if do == 'print':
+                obj = obj.__str__(extended=True)
     if do == 'print':
         print(obj)
     elif do == 'load':
@@ -396,6 +407,7 @@ def load(io, key, seedid=None, day=None, do='return', prep_kw={},
     elif do == 'return':
         return obj
     elif do == 'export':
+        print(obj)
         obspyh5.set_index()
         obj.write(fname, format)
         obspyh5.set_index(INDEX)
@@ -445,7 +457,7 @@ def plot(io, key, plottype=None, seedid=None, day=None, prep_kw={},
             fname = bname + '_' + key.replace('/', '_')
             plot_(stream, fname, **kw)
         else:
-            for task, res in _iterh5(key, io):
+            for task, res in _iter_h5(io, key):
                 fname = bname + task.replace('/', '_')
                 plot_(res, fname, **kw)
     if show:
