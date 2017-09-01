@@ -224,7 +224,8 @@ def get_data(starttime, endtime, **smeta):
         self.out('stretch cauto 2')
         self.out('stretch cauto 2 --njobs 1')
         _replace_in_file('conf.json', 'conf2.json', '"sides": "right"',
-                '"time_period": [null, "2010-02-05"], "sides": "right"')
+                '"time_period": [null, "2010-02-05"], "maxlag": 40, '
+                '"sides": "right"')
         self.out('-c conf2.json stretch cauto/CX.PATCX-CX.PATCX/.BHZ-.BHZ 2')
         self.out('plot c1_s1d_t1/CX.PATCX-CX.PB01 %s' % po)
         self.out('plot cauto_t2 --plottype wiggle', 'not supported')
