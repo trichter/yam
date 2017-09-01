@@ -52,7 +52,7 @@ class TestCase(unittest.TestCase):
 
         self.plotdir = os.path.join(self.tempdir, 'plots')
         self.script = load_entry_point('yam', 'console_scripts', 'yam')
-        total = 71 - 2 * self.permanent_tempdir
+        total = 74 - 2 * self.permanent_tempdir
         self.pbar = tqdm.tqdm(total=total, desc='CLI tests passed')
 
     def out(self, cmd, text=None):
@@ -222,9 +222,11 @@ def get_data(starttime, endtime, **smeta):
         self.out('stretch c1_s1d 1')
         self.out('stretch cauto/CX.PATCX-CX.PATCX/.BHZ-.BHZ 2')
         self.out('stretch cauto 2')
+        self.out('remove cauto_t2/CX.PATCX-CX.PATCX/.BHZ-.BHZ')
         self.out('stretch cauto 2 --njobs 1')
+        self.out('remove cauto_t2/CX.PATCX-CX.PATCX/.BHZ-.BHZ')
         _replace_in_file('conf.json', 'conf2.json', '"sides": "right"',
-                '"time_period": [null, "2010-02-05"], "maxlag": 40, '
+                '"time_period": [null, "2010-02-05"], "max_lag": 40, '
                 '"sides": "right"')
         self.out('-c conf2.json stretch cauto/CX.PATCX-CX.PATCX/.BHZ-.BHZ 2')
         self.out('plot c1_s1d_t1/CX.PATCX-CX.PB01 %s' % po)
