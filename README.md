@@ -122,7 +122,7 @@ stream = read('corr.h5', 'H5')
 stream = read('stack.h5', 'H5', include_only=dict(key='c1_s1d', network1='CX', station1='PATCX',
                                                   network2='CX', station2='PB01'))
 # or specify the group explicitly
-stream = read('stack.h5', 'H5', 'c1_s1d')
+stream = read('stack.h5', 'H5', group='c1_s1d')
 
 # read the stretching results into a dictionary
 stretch_result = read_dicts('stretch.h5', 'c1_s1d_t1')

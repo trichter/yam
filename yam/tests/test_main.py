@@ -184,7 +184,8 @@ def get_data(starttime, endtime, **smeta):
         self.assertEqual(cauto_info, cauto_info_seq)
 
         # check plots of correlation
-        po = """--plot-options {"trim":[0,10],"figsize":[10,10]}"""
+        po = ('--plot-options {"trim":[0,10],"figsize":[10,10],'
+                              '"time_period":[null,"2010-02-05"]}')
         self.out('plot c1_s1d --plottype vs_dist')
         self.checkplot('corr_vs_dist_c1_s1d_ZZ.png')
         self.out('plot c1_s1d/CX.PATCX-CX.PB01 --plottype wiggle')
@@ -215,13 +216,16 @@ def get_data(starttime, endtime, **smeta):
         self.out('remove c1_s1d_s2dm1d c1_s1d_s1')
 
         # check stretching
-        po = """--plot-options {"show_line":true}"""
+        po = ('--plot-options {"show_line":true,'
+                              '"time_period":[null,"2010-02-05"]}')
         self.out('stretch c1_s1d/CX.PATCX-CX.PATCX 1')
         self.out('stretch c1_s1d 1')
         self.out('stretch cauto/CX.PATCX-CX.PATCX/.BHZ-.BHZ 2')
         self.out('stretch cauto 2')
         self.out('stretch cauto 2 --njobs 1')
-        self.out('stretch cauto/CX.PATCX-CX.PATCX/.BHZ-.BHZ 2')
+        _replace_in_file('conf.json', 'conf2.json', '"sides": "right"',
+                '"time_period": [null, "2010-02-05"], "sides": "right"')
+        self.out('-c conf2.json stretch cauto/CX.PATCX-CX.PATCX/.BHZ-.BHZ 2')
         self.out('plot c1_s1d_t1/CX.PATCX-CX.PB01 %s' % po)
         self.out('plot cauto_t2 --plottype wiggle', 'not supported')
         self.out('plot cauto_t2')

@@ -120,7 +120,7 @@ def _get_existent(fname, root, level):
         else:
             level_reached = g.name.count('/')
         visit(g, level - level_reached)
-    return done
+    return sorted(done)
 
 
 def _todo_tasks(tasks, done_tasks):
@@ -219,6 +219,7 @@ def _iter_dicts(fname, groupname='/', level=3):
         for task in tasks:
             yield task, _read_dict(f[task])
 
+
 def read_dicts(fname, groupname='/', level=3):
     return [obj[1] for obj in _iter_dicts(fname, groupname, level)]
 
@@ -236,11 +237,6 @@ def _iter_h5(io, key, level=3):
     iter_ = _iter_dicts if is_stretch else _iter_streams
     for obj in iter_(fname, key, level=level):
         yield obj
-
-
-
-
-
 
 
 def _start_ipy(obj):

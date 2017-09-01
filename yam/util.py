@@ -11,6 +11,7 @@ import sys
 import tempfile
 
 import numpy as np
+from obspy import UTCDateTime as UTC
 import scipy.signal
 import tqdm
 
@@ -75,6 +76,31 @@ def _time2sec(time):
     return time
 
 
+def _trim(tr, time_interval):
+    starttime = tr.stats.starttime
+    mid = starttime + (tr.stats.endtime - starttime) / 2
+    if time_interval is not None:
+        start, end = time_interval
+        if start is not None:
+            start = mid + start
+        if end is not None:
+            end = mid + end
+        tr.trim(start, end)
+    times = tr.times(reftime=mid)
+    tr.stats.starttime = starttime
+    return times
+
+
+def _trim_time_period(stream, time_period):
+    if time_period is None:
+        return
+    starttime, endtime = time_period
+    traces = [tr for tr in stream if
+              (starttime is None or tr.stats.starttime >= UTC(starttime)) and
+              (endtime is None or tr.stats.starttime < UTC(endtime))]
+    stream.traces = traces
+
+
 def create_config(conf='conf.json', tutorial=False):
     shutil.copyfile(resource_filename('yam', 'conf_example.json'), conf)
     temp_dir = os.path.join(tempfile.gettempdir(), 'yam_example_data')
@@ -120,44 +146,32 @@ def create_config(conf='conf.json', tutorial=False):
             shutil.copytree(station_template, dest_dir_inv)
 
 
-def get_data_window(stream, start=None, end=None, relative='middle'):
-    """
-    Return array with data in time window (start, end) around relative.
-
-    'time' can stand for UTCDateTime, list of UTCDateTimes, header entry out of
-    ('ponset', 'sonset', 'startime', 'endtime') or 'middle'
-    :param stream: Stream object with data
-    :param start, end: time or float (seconds) relative to param=relative
-    :param relative: time, is needed if start or end in seconds (float)
-    :return: np.array of shape (N_stream, N_data)
-    """
-    for tr in stream:
-        if relative == 'middle':
-            t1 = tr.stats.starttime
-            t2 = tr.stats.endtime
-            reft = t1 + 0.5 * (t2 - t1)
-        else:
-            reft = tr.stats[relative]
-        if start is not None:
-            start = reft + start
-        if end is not None:
-            end = reft + end
-        tr = tr.slice(start, end)
-    if len(stream) == 0:
-        raise ValueError('Stream has length 0')
-    samp = [tr.stats.sampling_rate for tr in stream]
-    npts = [len(tr) for tr in stream]
-    if min(samp) != max(samp):
-        for tr in stream:
-            tr.decimate(int(tr.stats.sampling_rate) // min(samp))
-        log.warning('Downsampling stream because of differing sampling rate.')
-    if min(npts) != max(npts):
-        log.warning('Traces in stream have different NPTS. '
-                    'Difference: %d samples' % (max(npts) - min(npts)))
-    data = np.zeros((len(stream), max(npts)))
-    for i, trace in enumerate(stream):
-        data[i, :len(trace.data)] = trace.data
-    return data
+# def _stream2matrix(stream):
+#    """
+#    Return array with data in time window (start, end) around relative.
+#
+#    'time' can stand for UTCDateTime, list of UTCDateTimes, header entry out of
+#    ('ponset', 'sonset', 'startime', 'endtime') or 'middle'
+#    :param stream: Stream object with data
+#    :param trim: 2 time or float (seconds) relative to param=relative
+#    :param relative: time, is needed if start or end in seconds (float)
+#    :return: np.array of shape (N_stream, N_data)
+#    """
+#    if len(stream) == 0:
+#        raise ValueError('Stream has length 0')
+#    samp = [tr.stats.sampling_rate for tr in stream]
+#    npts = [len(tr) for tr in stream]
+#    if min(samp) != max(samp):
+#        for tr in stream:
+#            tr.decimate(int(tr.stats.sampling_rate) // min(samp))
+#        log.warning('Downsampling stream because of differing sampling rate.')
+#    if min(npts) != max(npts):
+#        log.warning('Traces in stream have different NPTS. '
+#                    'Difference: %d samples' % (max(npts) - min(npts)))
+#    data = np.zeros((len(stream), max(npts)))
+#    for i, trace in enumerate(stream):
+#        data[i, :len(trace.data)] = trace.data
+#    return data
 
 
 def smooth(x, window_len=None, window='flat', method='zeros'):

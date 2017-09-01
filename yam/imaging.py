@@ -6,12 +6,11 @@ from collections import OrderedDict
 import os.path
 from warnings import warn
 
-from matplotlib.dates import date2num
 import matplotlib.pyplot as plt
 import numpy as np
-import obspy
+from obspy import UTCDateTime as UTC
 
-from yam.util import _corr_id
+from yam.util import _corr_id, _trim, _trim_time_period
 import yam.stack
 
 
@@ -72,11 +71,13 @@ def plot_data(data, fname, ext='.png', show=False,
 def plot_corr_vs_dist(
         stream, fname, figsize=(10, 5), ext='.png',
         components='ZZ', line_style='k', scale=1, dist_unit='km',
-        trim=None):
+        trim=None, time_period=None):
     # scale relative to axis
     traces = [tr for tr in stream if
               _corr_id(tr).split('-')[0][-1] + _corr_id(tr)[-1] == components]
-    stack = yam.stack.stack(obspy.Stream(traces))
+    stream.traces = traces
+    _trim_time_period(stream, time_period)
+    stack = yam.stack.stack(stream)
     if len(stack) == 0:
         msg = 'Not plotting anything. No traces in stack with components %s'
         warn(msg % components)
@@ -87,12 +88,9 @@ def plot_corr_vs_dist(
                   else 1000)
     max_dist = max(tr.stats.dist / dist_scale for tr in stack)
     for tr in stack:
-        mid = tr.stats.starttime + (tr.stats.endtime - tr.stats.starttime) / 2
-        if trim:
-            tr.trim(mid - trim[0], mid + trim[1])
-        lag_time = tr.times(reftime=mid)
+        lag_times = _trim(tr, trim)
         scaled_data = tr.stats.dist / dist_scale + tr.data * max_dist * scale
-        ax.plot(lag_time, scaled_data, line_style)
+        ax.plot(lag_times, scaled_data, line_style)
     fname = '%s_%s' % (fname, components)
     label = os.path.basename(fname)
     ax.annotate(label, (0, 1), (10, 10), 'axes fraction', 'offset points',
@@ -105,24 +103,21 @@ def plot_corr_vs_dist(
 def plot_corr_vs_time_wiggle(
         stream, fname, figsize=(10, 5), ext='.png',
         line_style='k', scale=20, line_width=0.5,
-        trim=None):
+        trim=None, time_period=None):
     # scale relative to neighboring wiggles
     ids = {_corr_id(tr) for tr in stream}
     if len(ids) != 1:
         warn('Different ids in stream: %s' % ids)
     stream.sort(['starttime'])
-    times = [date2num(tr.stats.starttime.datetime) for tr in stream]
+    _trim_time_period(stream, time_period)
+    times = [tr.stats.starttime.matplotlib_date for tr in stream]
     dt = np.median(np.diff(times))
     fig = plt.figure(figsize=figsize)
     ax = fig.add_subplot(111)
     for tr in stream:
-        t3 = tr.stats.starttime
-        mid = t3 + (tr.stats.endtime - t3) / 2
-        if trim:
-            tr.trim(mid - trim[0], mid + trim[1])
-        lag_time = tr.times(reftime=mid)
-        scaled_data = date2num(t3.datetime) + tr.data * dt * scale
-        ax.plot(lag_time, scaled_data, line_style, lw=line_width)
+        lag_times = _trim(tr, trim)
+        scaled_data = tr.stats.starttime.matplotlib_date + tr.data * dt * scale
+        ax.plot(lag_times, scaled_data, line_style, lw=line_width)
     label = os.path.basename(fname)
     ax.annotate(label, (0, 1), (10, 10), 'axes fraction', 'offset points',
                 annotation_clip=False, va='bottom')
@@ -134,22 +129,19 @@ def plot_corr_vs_time_wiggle(
 
 def plot_corr_vs_time(
         stream, fname, figsize=(10, 5), ext='.png',
-        vmax=None, cmap='RdBu_r', trim=None,
+        vmax=None, cmap='RdBu_r', trim=None, time_period=None,
         show_stack=True, line_style='k', line_width=1):
     ids = {_corr_id(tr) for tr in stream}
     if len(ids) != 1:
         warn('Different ids in stream: %s' % ids)
     stream.sort(['starttime'])
-    times = [date2num(tr.stats.starttime.datetime) for tr in stream]
+    _trim_time_period(stream, time_period)
+    for tr in stream:
+        lag_times = _trim(tr, trim)
+    times = [tr.stats.starttime.matplotlib_date for tr in stream]
     fig = plt.figure(figsize=figsize)
     ax = fig.add_axes([0.15, 0.1, 0.75, 0.75])
     cax = fig.add_axes([0.91, 0.375, 0.008, 0.25])
-    for tr in stream:
-        st = tr.stats.starttime
-        mid = st + (tr.stats.endtime - st) / 2
-        if trim:
-            tr.trim(mid - trim[0], mid + trim[1])
-    lag_times = tr.times(reftime=mid)
     data = np.array([tr.data for tr in stream])
     if vmax is None:
         vmax = min(0.8 * np.max(data), 0.1)
@@ -160,7 +152,7 @@ def plot_corr_vs_time(
     data2 = _add_value(np.transpose(data), no_data, value=0, masked=True)
     data2 = np.transpose(data2)
     mesh = ax.pcolormesh(lag_times2, times2, data2, cmap=cmap,
-                          vmin=-vmax, vmax=vmax)
+                         vmin=-vmax, vmax=vmax)
     fig.colorbar(mesh, cax)
     ax.set_ylabel('date')
     ax.set_xlabel('time (s)')
@@ -182,7 +174,7 @@ def plot_corr_vs_time(
 
 
 def plot_sim_mat(res, bname=None, figsize=(10, 5), ext='.png',
-                 vmax=None, cmap='hot_r',
+                 vmax=None, time_period=None, ylim=None, cmap='hot_r',
                  show_line=False, line_style='b', line_width=2,
                  time_window=None):
     labelexpr = '{}_tw{:02d}_{:05.1f}s-{:05.1f}s'
@@ -217,12 +209,18 @@ def plot_sim_mat(res, bname=None, figsize=(10, 5), ext='.png',
         label = os.path.basename(fname)
         ax.annotate(label, (0, 1), (10, 10), 'axes fraction', 'offset points',
                     annotation_clip=False, va='bottom')
+        if ylim:
+            if isinstance(ylim, (float, int)):
+                ylim = (-ylim, ylim)
+            ax.set_ylim(ylim)
+        t0, t1 = (None, None) if time_period is None else time_period
+        t0 = x2[0] if t0 is None else UTC(t0).matplotlib_date
+        t1 = x2[-1] if t1 is None else UTC(t1).matplotlib_date
+        ax.set_xlim(t0, t1)
         if bname is not None:
             fig.savefig(fname + ext)
         figs.append(fig)
-    if tw is None:
+    if time_window is None:
         return figs
     elif len(figs) == 1:
         return figs[0]
-
-

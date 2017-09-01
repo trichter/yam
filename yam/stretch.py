@@ -2,18 +2,19 @@
 
 import logging
 import numpy as np
-import obspy
 
 from yam._from_miic import time_windows_creation, time_stretch_estimate
-from yam.util import get_data_window
+from yam.util import _trim
 import yam.stack
 
 log = logging.getLogger('yam.stretch')
 
 
-def stretch(stream, reftr=None, stretch=None, start=None, end=None,
-            relative='middle', str_range=10, nstr=100, time_windows=None,
-            time_windows_relative=None, sides='right'):
+def stretch(stream, reftr=None, stretch=None, str_range=10, nstr=100,
+            time_windows=None,
+            time_windows_relative=None, sides='right',
+            max_lag=None, time_period=None
+            ):
     """
     time_windows:
         ((5, 10, 15), 5) -- 3 time windows, start in sec, length in sec
@@ -29,7 +30,10 @@ def stretch(stream, reftr=None, stretch=None, start=None, end=None,
         tw_mat = time_windows_creation(*args)
     else:
         raise ValueError('Wrong format for time_window')
-    data = get_data_window(stream, start=start, end=end, relative=relative)
+    if max_lag is not None:
+        for tr in stream:
+            _trim(tr, (-max_lag, max_lag))
+    data = np.array([tr.data for tr in stream])
     if np.min(tw_mat) < 0 or data.shape[1] < np.max(tw_mat):
         msg = ('Defined time window outside of data. '
                'shape, mintw index, maxtw index: %s, %s, %s')
@@ -42,8 +46,8 @@ def stretch(stream, reftr=None, stretch=None, start=None, end=None,
     if reftr != 'alternative':
         if hasattr(reftr, 'stats'):
             assert reftr.stats.sampling_rate == sr
-            ref_data = get_data_window(obspy.Stream([reftr]), start=start,
-                                       end=end, relative=relative)[0, :]
+            ref_data = reftr.data
+            #ref_data = _stream2matrix(obspy.Stream([reftr]))[0, :]
         else:
             ref_data = reftr
 #        log.debug('calculate correlations and time shifts...')
