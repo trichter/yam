@@ -54,6 +54,8 @@ def write_dict(dict_, fname, mode='a'):
         index = index.format(**attrs)
         group = f.require_group(index)
         for key, val in attrs.items():
+            if 'time' in key:
+                val = str(val)
             group.attrs[key] = val
         for key, val in dict_.items():
             if key not in ('attrs', ):
@@ -393,7 +395,6 @@ def load(io, key, seedid=None, day=None, do='return', prep_kw={},
                 obj = '\n\n'.join(str(o) for o in obj)
         else:
             obj = obspy.read(fname_in, 'H5', group=key, headonly=do == 'print')
-            obj.sort()
             if do == 'print':
                 obj = obj.__str__(extended=True)
     if do == 'print':

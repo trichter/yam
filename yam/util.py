@@ -146,7 +146,7 @@ def create_config(conf='conf.json', tutorial=False):
             shutil.copytree(station_template, dest_dir_inv)
 
 
-# def _stream2matrix(stream):
+#def _stream2matrix(stream):
 #    """
 #    Return array with data in time window (start, end) around relative.
 #

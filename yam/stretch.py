@@ -2,9 +2,10 @@
 
 import logging
 import numpy as np
+from warnings import warn
 
 from yam._from_miic import time_windows_creation, time_stretch_estimate
-from yam.util import _trim
+from yam.util import _trim, _corr_id
 import yam.stack
 
 log = logging.getLogger('yam.stretch')
@@ -20,6 +21,10 @@ def stretch(stream, reftr=None, stretch=None, str_range=10, nstr=100,
         ((5, 10, 15), 5) -- 3 time windows, start in sec, length in sec
 
     """
+    ids = {_corr_id(tr) for tr in stream}
+    if len(ids) != 1:
+        warn('Different ids in stream: %s' % ids)
+    stream.sort()
     sr = stream[0].stats.sampling_rate
     rel = 0.
     if time_windows_relative is not None:
@@ -86,8 +91,8 @@ def stretch(stream, reftr=None, stretch=None, str_range=10, nstr=100,
               'attrs': {'nstr': nstr,
                         'str_range': str_range,
                         'sides': sides,
-                        'starttime': str(stream[0].stats.starttime)[:19],
-                        'endtime': str(stream[-1].stats.starttime)[:19]
+                        'starttime': stream[0].stats.starttime,
+                        'endtime': stream[-1].stats.starttime
                         }
               }
     for k in ('network1', 'network2', 'station1', 'station2',
