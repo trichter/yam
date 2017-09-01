@@ -1,3 +1,6 @@
+v0.2.1:
+  * refactor part of the imaging module
+  * rename some kwargs in imaging module
 v0.2.0:
   * rename read_stretch to read_dicts
   * remove unnecessary "root" group in HDF5 files
