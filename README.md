@@ -6,6 +6,8 @@ Yet another monitoring tool using correlations of ambient noise
 [![pypi version](https://img.shields.io/pypi/v/yam.svg)](https://pypi.python.org/pypi/yam)
 [![python version](https://img.shields.io/pypi/pyversions/yam.svg)](https://python.org)
 
+[**Showcase**](http://nbviewer.jupyter.org/github/trichter/notebooks/blob/master/notebooks/velocity_variations_patcx/velocity_variations_patcx.ipynb)
+
 
 #### Motivation
 
@@ -79,10 +81,10 @@ yam info               # plot information about project
 yam info stations      # print inventory info
 yam info data          # plot info about data files
 yam plot stations      # plot station map
-yam print data CX.PATCX..BHZ 2010-02-03     # load data for a specific station and day and print information
-yam load data CX.PATCX..BHZ 2010-02-03      # load data for a specific station and day and start an IPython session
-yam plot data CX.PATCX..BHZ 2010-02-03      # plot a day file
-yam plot data CX.PATCX..BHZ 2010-02-03 1    # plot the preprocessed data of the same day (preproccessing defined in corr config 1)
+yam print data CX.PATCX..BHZ 2010-02-03       # load data for a specific station and day and print information
+yam load data CX.PATCX..BHZ 2010-02-03        # load data for a specific station and day and start an IPython session
+yam plot data CX.PATCX..BHZ 2010-02-03        # plot a day file
+yam plot prepdata CX.PATCX..BHZ 2010-02-03 1  # plot the preprocessed data of the same day (preproccessing defined in corr config 1)
 
 yam correlate 1        # correlates data with corr configuration 1
 yam correlate 1        # should finish fast, because everything is already calculated
