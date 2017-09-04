@@ -100,6 +100,8 @@ yam plot c1_s1d_s3dm1d_t1/CX.PATCX-CX.PB01  # plot similarity matrices, but only
 
 Of course, the plots do not look overwhelmingly for such a small dataset.
 
+An advanced tutorial can be studied [here](http://nbviewer.jupyter.org/github/trichter/notebooks/blob/master/notebooks/velocity_variations_patcx/velocity_variations_patcx.ipynb).
+
 
 #### Use your own data
 
