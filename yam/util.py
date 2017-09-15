@@ -69,6 +69,7 @@ def _seedid2meta(seedid):
 
 
 def _time2sec(time):
+    """Convert string (e.g. 1d or 0.5h) to seconds"""
     if not isinstance(time, numbers.Number):
         time, unit = float(time[:-1]), time[-1]
         assert unit in 'dh'
@@ -77,6 +78,7 @@ def _time2sec(time):
 
 
 def _trim(tr, time_interval):
+    """Trim traces of stream relative to mid sample"""
     starttime = tr.stats.starttime
     mid = starttime + (tr.stats.endtime - starttime) / 2
     if time_interval is not None:
@@ -92,6 +94,7 @@ def _trim(tr, time_interval):
 
 
 def _trim_time_period(stream, time_period):
+    """Restrict traces of stream to given time period"""
     if time_period is None:
         return
     starttime, endtime = time_period
@@ -102,6 +105,7 @@ def _trim_time_period(stream, time_period):
 
 
 def create_config(conf='conf.json', tutorial=False):
+    """Create JSON config file and download tutorial data if requested"""
     shutil.copyfile(resource_filename('yam', 'conf_example.json'), conf)
     temp_dir = os.path.join(tempfile.gettempdir(), 'yam_example_data')
     template = os.path.join(temp_dir, 'example_data')
@@ -191,9 +195,6 @@ def smooth(x, window_len=None, window='flat', method='zeros'):
         'clip': pad signal on both ends with the last valid value (same)\n
         None: no handling of border effects
         (len(smooth(x)) = len(x) - len(window_len) + 1)
-
-    See also:
-    www.scipy.org/Cookbook/SignalSmooth
     """
     if window_len is None:
         return x
@@ -225,6 +226,7 @@ def smooth(x, window_len=None, window='flat', method='zeros'):
 
 
 class IterTime():
+    """Iterator yielding UTCDateTime objects between start- and endtime"""
     def __init__(self, startdate, enddate, dt=24 * 3600):
         self.startdate = startdate
         self.enddate = enddate

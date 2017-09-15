@@ -18,13 +18,15 @@ import yam.stack
 log = logging.getLogger('yam.correlate')
 
 
-def fill_array(data, mask=None, fill_value=None):
+def _fill_array(data, mask=None, fill_value=None):
     """
     Fill masked numpy array with value without demasking.
 
     Additonally set fill_value to value.
     If data is not a MaskedArray returns silently data.
     """
+    # TODO: get some gappy data and check if all calls to this function are
+    # really necessary
     if mask is not None and mask is not False:
         data = np.ma.MaskedArray(data, mask=mask, copy=False)
     if np.ma.is_masked(data) and fill_value is not None:
@@ -35,18 +37,19 @@ def fill_array(data, mask=None, fill_value=None):
     return data
 
 
-def time_norm(data, method=None, clip_factor=1, clip_set_zero=False,
+def time_norm(data, method, clip_factor=1, clip_set_zero=False,
               mute_parts=48, mute_factor=2):
     """
-    Calculates normalized data. See Bensen et al. (2007)
+    Calculates normalized data. See e.g. Bensen et al. (2007)
 
     Method is a string. There are the following methods:
 
-    1bit: reduce data to +1 if >0 and -1 if <0
-    clip: clip data to the root mean square (rms)
-    mute_envelope: calculate envelope and set data to zero where envelope
+    :param data: data to manipulate
+    :param method:
+        1bit: reduce data to +1 if >0 and -1 if <0\n
+        clip: clip data to the root mean square (rms)\n
+        mute_envelope: calculate envelope and set data to zero where envelope
         os larger than specified
-
     :param clip_factor: multiply std with this value before cliping
     :param clip_mask: instead of clipping, set the values to zero and mask
         them
@@ -74,34 +77,29 @@ def time_norm(data, method=None, clip_factor=1, clip_set_zero=False,
         levels = [np.mean(d) for d in np.array_split(envelope, mute_parts)]
         level = mute_factor * np.median(levels)
         data[envelope > level] = 0
-    elif method is not None:
+    else:
         msg = 'The method passed to time_norm is not known: %s.' % method
         raise ValueError(msg)
-    return fill_array(data, mask=mask, fill_value=0.)
+    return _fill_array(data, mask=mask, fill_value=0.)
 
 
 # http://azitech.wordpress.com/
 # 2011/03/15/designing-a-butterworth-low-pass-filter-with-scipy/
-def filter_resp(freqmin, freqmax, corners=2, zerophase=False, sr=None,
+def _filter_resp(freqmin, freqmax, corners=2, zerophase=False, sr=None,
                 N=None, whole=False):
     """
-    Butterworth-Bandpass Filter.
+    Complex frequency response of Butterworth-Bandpass Filter.
 
-    Filter frequency data from freqmin to freqmax using
-    corners corners.
-
-    :param data: Data to filter, type numpy.ndarray.
     :param freqmin: Pass band low corner frequency.
     :param freqmax: Pass band high corner frequency.
-    :param sr: Sampling rate in Hz.
-    :param corners: Filter corners. Note: This is twice the value of PITSA's
-        filter sections
+    :param corners: Filter corners
     :param zerophase: If True, apply filter once forwards and once backwards.
         This results in twice the number of corners but zero phase shift in
         the resulting filtered trace.
-    :return: Filtered data.
+    :param sr: Sampling rate in Hz.
+    :param N,whole: passed to scipy.signal.freqz
 
-    Derived from obspy.signal.filter
+    :return: frequencies and complex response
     """
     df = sr
     fe = 0.5 * df
@@ -129,9 +127,12 @@ def spectral_whitening(data, sr=None, smooth=None, filter=None,
     """
     Apply spectral whitening to data.
 
-    sr: sampling rate (only needed for smoothing)
-    smooth: smoothing in Hz
     Data is divided by its smoothed (Default: None) amplitude spectrum.
+
+    :param data: data to manipulate
+    :param sr: sampling rate (only needed for smoothing)
+    :param smooth: length of smoothing window in Hz
+        (default None -> no smoothing)
     """
     mask = np.ma.getmask(data)
     N = len(data)
@@ -146,12 +147,18 @@ def spectral_whitening(data, sr=None, smooth=None, filter=None,
     spec_ampl[spec_ampl < wl] = wl
     spec /= spec_ampl
     if filter is not None:
-        spec *= filter_resp(*filter, sr=sr, N=len(spec), whole=True)[1]
+        spec *= _filter_resp(*filter, sr=sr, N=len(spec), whole=True)[1]
     ret = np.real(ifft(spec, nfft)[:N])
-    return fill_array(ret, mask=mask, fill_value=0.)
+    return _fill_array(ret, mask=mask, fill_value=0.)
 
 
 def correlate_traces(tr1, tr2, maxshift=3600):
+    """
+    Return trace of cross-correlation of two input traces
+
+    :param tr1,tr2: two `~obspy.core.trace.Trace`  objects
+    :param maxsift: maximal shift in correlation in seconds
+    """
     n1, s1, l1, c1 = tr1.id.split('.')
     n2, s2, l2, c2 = tr2.id.split('.')
     sr = tr1.stats.sampling_rate
@@ -174,8 +181,10 @@ def __get_stations(inventory):
 def _iter_station_meta(inventory, components):
     """
     Return iterator yielding metadata per station and day.
+
     :param inventory: `~obspy.core.inventory.inventory.Inventory` instance
         with station and channel information
+    :param components: components to yield
     """
     stations = __get_stations(inventory)
     for seedid in stations:
@@ -189,6 +198,18 @@ def _iter_station_meta(inventory, components):
 
 def get_data(smeta, data, data_format, day, overlap=0, edge=0,
              trim_and_merge=False):
+    """Return data of one day
+
+    :param smeta: station metadata
+    :param data: string with expression of data day files or
+        function that returns the data (aka get_waveforms)
+    :param data_format: format of data
+    :param day: day as UTCDateTime
+    :param overlap: overlap to next day in seconds
+    :param edge: additional time span requested from day before and after
+        in seconds
+    :param trim_and_merge: weather data is trimed and merged
+    """
     next_day = day + 24 * 3600
     if not isinstance(data, str):
         try:
@@ -224,7 +245,7 @@ def get_data(smeta, data, data_format, day, overlap=0, edge=0,
     return stream
 
 
-def preprocess(stream, day, inventory,
+def preprocess(stream, day=None, inventory=None,
                overlap=0,
                remove_response=False,
                remove_response_options=None,
@@ -232,7 +253,25 @@ def preprocess(stream, day, inventory,
                normalization=(),
                time_norm_options=None,
                spectral_whitening_options=None,
-               downsample=None):
+               downsample_before=None, downsample=None):
+    """
+    Preprocess Stream of 1 day.
+
+    :param stream: Stream object
+    :param day: UTCDateTime object of day (for trimming)
+    :param inventory: Inventory object (for response removal)
+    :param bool remove_response: Remove reponse
+    :param filter: min and max frequency of filter
+    :param normalizaton: ordered list of normalizations to apply,
+        'sprectal_whitening' an/or one or several of the time normalizations
+        listed in `time_norm`
+    :param downsample_before: downsample before preprocessing,
+        target frequency
+    :param downsample: downsample after preprocessing,
+        target frequency
+    :param \*_options: dictionary of options passed to the corresponding
+        function
+    """
     if time_norm_options is None:
         time_norm_options = {}
     if spectral_whitening_options is None:
@@ -241,9 +280,15 @@ def preprocess(stream, day, inventory,
         remove_response_options = {}
     if isinstance(normalization, str):
         normalization = [normalization]
-    next_day = day + 24 * 3600
     for tr in stream:
         tr.data = tr.data.astype('float64')
+    if downsample_before:
+        for tr in stream:
+            if tr.stats.sampling_rate % downsample_before == 0:
+                tr.decimate(int(tr.stats.sampling_rate) // downsample_before)
+            else:
+                tr.interpolate(downsample_before, method='lanczos')
+    stream.traces[:] = [tr for tr in stream if len(tr) > 9]
     for tr in stream:
         tr.detrend()
         check_and_phase_shift(tr)
@@ -267,7 +312,9 @@ def preprocess(stream, day, inventory,
     if len({tr.stats.sampling_rate for tr in stream}) > 1:
         raise NotImplementedError('Different sampling rates')
     stream.merge(method=1, interpolation_samples=10)
-    stream.trim(day, next_day + overlap)
+    if day is not None:
+        next_day = day + 24 * 3600
+        stream.trim(day, next_day + overlap)
     stream.sort()
 
 
@@ -282,6 +329,7 @@ def correlate(io, day, outkey,
               keep_correlations=False,
               stack='1day',
               **preprocessing_kwargs):
+    """Correlate data of one day"""
     inventory = io['inventory']
     length = _time2sec(length)
     overlap = _time2sec(overlap)
@@ -341,7 +389,7 @@ def correlate(io, day, outkey,
                     / tr.stats.sampling_rate / length < discard for tr in sub):
                 continue
             for tr in sub:
-                fill_array(tr.data, fill_value=0.)
+                _fill_array(tr.data, fill_value=0.)
                 tr.data = np.ma.getdata(tr.data)
             xtr = correlate_traces(sub[0], sub[1], max_lag)
             xtr.stats.starttime = t1

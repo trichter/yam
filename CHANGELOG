@@ -1,3 +1,5 @@
+dev:
+  * add downsample_before option
 v0.2.1:
   * refactor part of the imaging module
   * rename some kwargs in imaging module

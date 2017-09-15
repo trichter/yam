@@ -57,11 +57,13 @@ def _align_values_for_pcolormesh(x):
 
 
 def plot_stations(inventory, fname, ext='.png', projection='local', **kwargs):
+    """ """
     inventory.plot(projection, outfile=fname + ext, **kwargs)
 
 
 def plot_data(data, fname, ext='.png', show=False,
               type='dayplot', **kwargs):
+    """ """
     label = os.path.basename(fname)
     data.plot(type=type, outfile=fname + ext, title=label)
     if show:
@@ -72,6 +74,7 @@ def plot_corr_vs_dist(
         stream, fname, figsize=(10, 5), ext='.png',
         components='ZZ', line_style='k', scale=1, dist_unit='km',
         trim=None, time_period=None):
+    """ """
     # scale relative to axis
     traces = [tr for tr in stream if
               _corr_id(tr).split('-')[0][-1] + _corr_id(tr)[-1] == components]
@@ -104,6 +107,7 @@ def plot_corr_vs_time_wiggle(
         stream, fname, figsize=(10, 5), ext='.png',
         line_style='k', scale=20, line_width=0.5,
         trim=None, time_period=None):
+    """ """
     # scale relative to neighboring wiggles
     ids = {_corr_id(tr) for tr in stream}
     if len(ids) != 1:
@@ -131,6 +135,7 @@ def plot_corr_vs_time(
         stream, fname, figsize=(10, 5), ext='.png',
         vmax=None, cmap='RdBu_r', trim=None, time_period=None,
         show_stack=True, line_style='k', line_width=1):
+    """ """
     ids = {_corr_id(tr) for tr in stream}
     if len(ids) != 1:
         warn('Different ids in stream: %s' % ids)
@@ -177,6 +182,7 @@ def plot_sim_mat(res, bname=None, figsize=(10, 5), ext='.png',
                  vmax=None, time_period=None, ylim=None, cmap='hot_r',
                  show_line=False, line_style='b', line_width=2,
                  time_window=None):
+    """ """
     labelexpr = '{}_tw{:02d}_{:05.1f}s-{:05.1f}s'
     figs = []
     for itw, tw in enumerate(res['lag_time_windows']):

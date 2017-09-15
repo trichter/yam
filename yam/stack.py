@@ -7,6 +7,7 @@ from yam.util import _corr_id, _time2sec, IterTime
 
 
 def stack(stream, length=None, move=None):
+    """ """
     stream.sort()
     stream_stack = obspy.Stream()
     ids = {_corr_id(tr) for tr in stream}

@@ -29,10 +29,8 @@ log.addHandler(logging.NullHandler())
 
 
 class ConfigJSONDecoder(json.JSONDecoder):
-
-    """Decode JSON config with comments stripped"""
-
     def decode(self, s):
+        """Decode JSON config with comments stripped"""
         s = '\n'.join(l.split('#', 1)[0] for l in s.split('\n'))
         return super(ConfigJSONDecoder, self).decode(s)
 
@@ -109,10 +107,7 @@ def run(command, conf=None, tutorial=False, **args):
         See the example configuration file for help and possible arguments.
         Options in args can overwrite the configuration from the file.
         E.g. ``run(conf='conf.json', bla='bla')`` will set bla configuration
-        value to `'bla'`.
-
-        Exceptions from the description in configuration file:
-    :param inventory: can be filename or ObsPy Inventory object
+        value to ``'bla'``.
     """
     if conf in ('None', 'none', 'null', ''):
         conf = None
