@@ -139,6 +139,7 @@ def start_correlate(io,
                     filter_inventory=None,
                     startdate='1990-01-01', enddate='2020-01-01',
                     njobs=None, **kwargs):
+    """ """
     if filter_inventory:
         log.debug('filter inventory')
         io['inventory'] = io['inventory'].select(**filter_inventory)
@@ -168,6 +169,7 @@ def start_correlate(io,
 
 
 def start_stack(io, key, outkey, subkey='', **kwargs):
+    """ """
     fname = io['stack'] if 's' in _analyze_key(key) else io['corr']
     tasks = _get_existent(fname, key + subkey, 3)
     done_tasks = [t.replace(outkey, key) for t in
@@ -183,6 +185,7 @@ def start_stack(io, key, outkey, subkey='', **kwargs):
 
 def stretch_wrapper(groupname, fname, fname_stretch, outkey, filter=None,
                     **kwargs):
+    """ """
     stream = obspy.read(fname, 'H5', group=groupname)
     if filter:
         _filter(stream, filter)
@@ -192,6 +195,7 @@ def stretch_wrapper(groupname, fname, fname_stretch, outkey, filter=None,
 
 
 def start_stretch(io, key, subkey='', njobs=None, **kwargs):
+    """ """
     fname = _get_fname(io, key)
     outkey = kwargs['outkey']
     tasks = _get_existent(fname, key + subkey, 3)
@@ -223,6 +227,7 @@ def _iter_dicts(fname, groupname='/', level=3):
 
 
 def read_dicts(fname, groupname='/', level=3):
+    """ """
     return [obj[1] for obj in _iter_dicts(fname, groupname, level)]
 
 
