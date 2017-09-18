@@ -115,7 +115,7 @@ def create_config(conf='conf.json', tutorial=False):
                      len([name for name in os.listdir(station_template)]))
     except FileNotFoundError:
         num_files = (0, 0)
-    if tutorial and num_files != (55, 3):
+    if tutorial and num_files[0] < 56 and num_files[1] < 3:
         print('Download example data from Geofon')
         from obspy import UTCDateTime as UTC
         from obspy.clients.fdsn.mass_downloader import (
