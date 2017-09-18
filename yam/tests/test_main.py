@@ -70,6 +70,8 @@ class TestCase(unittest.TestCase):
             logging.getLogger('yam').disabled = False
         elif self.verbose:
             logging.getLogger('yam').disabled = True
+        if self.verbose:
+            tqdm.tqdm.write('> yam ' + cmd)
         # catching all output, print only if tests are run with -v
         try:
             with io.StringIO() as f:
