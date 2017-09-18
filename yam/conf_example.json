@@ -82,6 +82,7 @@
                 # only_auto_correlation -> only use correlations between the same station (different channels possible)
                 # station_combinations (null, list) -> only use these station combinations (with or without network code)
                 # component_combinations (null, list) -> only use these component combinations
+                # "R" or "T" are radial and transverse component (rotation after preprocessing)
                 "station_combinations": ["CX.PATCX-CX.PB01", "PATCX-PB06", "PB06-PB06"],
                 "component_combinations": ["ZZ", "NZ"],
                 # weather to save the correlations (here the 1h-correlations)
