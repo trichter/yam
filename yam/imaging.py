@@ -185,6 +185,7 @@ def plot_corr_vs_time(
        :width: 30%
     .. image:: _static/corr_vs_time_zoom.png
        :width: 30%
+
     Default correlation plot.
 
     :param vmax: maximum value in colormap
@@ -242,6 +243,7 @@ def plot_sim_mat(res, bname=None, figsize=(10, 5), ext='.png',
 
     .. image:: _static/sim_mat.png
        :width: 30%
+
     Default plot for stretching results.
 
     :param res: dictionary with stretching results
