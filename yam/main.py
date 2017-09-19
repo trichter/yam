@@ -1,9 +1,6 @@
 # Copyright 2017 Tom Eulenfeld, GPLv3
 """
-Yam command line script and routines
-
->>> from yam import run
->>> yam(conf='conf.json')
+Command line interface and main entry point
 """
 
 import argparse
@@ -102,12 +99,18 @@ def run(command, conf=None, tutorial=False, **args):
     >>> from yam import run
     >>> run(conf='conf.json')
 
-    :param args: All args correspond to the respective command line and
-        configuration options.
-        See the example configuration file for help and possible arguments.
-        Options in args can overwrite the configuration from the file.
-        E.g. ``run(conf='conf.json', bla='bla')`` will set bla configuration
-        value to ``'bla'``.
+    :param command: if ``'create'`` the example configuration is created,
+       optionally the tutorial data files are downloaded
+
+    For all other commands this function loads the configuration
+    and construct the arguments which are passed to `run2()`
+
+    All args correspond to the respective command line and
+    configuration options.
+    See the example configuration file for help and possible arguments.
+    Options in args can overwrite the configuration from the file.
+    E.g. ``run(conf='conf.json', bla='bla')`` will set bla configuration
+    value to ``'bla'``.
     """
     if conf in ('None', 'none', 'null', ''):
         conf = None
@@ -138,7 +141,31 @@ def run2(command, io,
          key=None, keys=None, corrid=None, stackid=None, stretchid=None,
          correlate=None, stack=None, stretch=None,
          **args):
-    """Second main function for unpacking arguments"""
+    """
+    Second main function for unpacking arguments
+
+    Initialize logging, load inventory if necessary, load options from
+    configuration dictionary into args
+    (for correlate, stack and stretch commands) and run the corresponding
+    command in `~yam.commands` module. If ``"based_on"`` key is set the
+    configuration dictionary will be preloaded with the specified
+    configuration.
+
+    :param command: specified subcommand, will call one of
+        `~yam.commands.start_correlate()`,
+        `~yam.commands.start_stack()`,
+        `~yam.commands.start_stretch()`,
+        `~yam.commands.info()`,
+        `~yam.commands.load()`,
+        `~yam.commands.plot()`,
+        `~yam.commands.remove()`
+    :param logging,verbose,loglevel,logfile: logging configuration
+    :param key: the key to work with
+    :param keys: keys to remove (only remove command)
+    :param correlate,stack,stretch: corresponding configuration dictionaries
+    :param \*id: the configuration id to load from the config dictionaries
+    :param \*\*args: all other arguments are passed to next called function
+    """
     time_start = time.time()
     # Configure logging
     if command in ('correlate', 'stack', 'stretch'):

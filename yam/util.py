@@ -1,5 +1,5 @@
 # Copyright 2017 Tom Eulenfeld, GPLv3
-"""Some utility functions"""
+"""Utility functions"""
 
 from importlib import import_module
 import logging
@@ -150,7 +150,7 @@ def create_config(conf='conf.json', tutorial=False):
             shutil.copytree(station_template, dest_dir_inv)
 
 
-#def _stream2matrix(stream):
+# def _stream2matrix(stream):
 #    """
 #    Return array with data in time window (start, end) around relative.
 #
@@ -183,7 +183,7 @@ def smooth(x, window_len=None, window='flat', method='zeros'):
 
     This method is based on the convolution of a scaled window with the signal.
 
-    :param x: the input signal
+    :param x: the input signal (numpy array)
     :param window_len: the dimension of the smoothing window; should be an
         odd integer
     :param window: the type of window from 'flat', 'hanning', 'hamming',
@@ -227,6 +227,7 @@ def smooth(x, window_len=None, window='flat', method='zeros'):
 
 class IterTime():
     """Iterator yielding UTCDateTime objects between start- and endtime"""
+
     def __init__(self, startdate, enddate, dt=24 * 3600):
         self.startdate = startdate
         self.enddate = enddate

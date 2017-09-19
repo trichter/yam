@@ -1,5 +1,5 @@
 # Copyright 2017 Tom Eulenfeld, GPLv3
-
+"""Commands used by the CLI interface"""
 import functools
 import glob
 import logging
@@ -43,6 +43,14 @@ def _write_stream(queue):
 
 
 def write_dict(dict_, fname, mode='a'):
+    """
+    Write similarity matrix into HDF5 file
+
+    :param dict_: Dictionary with stretching results
+        (output from `~yam.stretch.stretch()`)
+    :param fname: file name
+    :param mode: file mode (default ``'a'`` -- write into file)
+    """
     with h5py.File(fname, mode=mode) as f:
         f.attrs['file_format_stretch'] = 'yam'
         f.attrs['version_stretch'] = yam.__version__
@@ -100,7 +108,7 @@ def start_parallel_jobs(tasks, do_work, write, njobs=None):
 
 def _get_existent(fname, root, level):
     """
-    return existing keys at level in HDF5 file
+    Return existing keys at level in HDF5 file
     """
     if not os.path.exists(fname):
         return []
@@ -139,7 +147,19 @@ def start_correlate(io,
                     filter_inventory=None,
                     startdate='1990-01-01', enddate='2020-01-01',
                     njobs=None, **kwargs):
-    """ """
+    """
+    Start correlation
+
+    :param io: |io|
+    :param filter_inventory: filter inventory with its select method,
+        specified dict is passed to |Inventory.select|
+    :param str startdate,enddate: start and end date as strings
+    :param njobs: number of cores to use for computation, days are computed
+        parallel, this might consume much memory, default: None -- use all
+        available cores
+    :param \*\*kwargs: all other kwargs are passed to
+        `~yam.correlate.correlate()` function
+    """
     if filter_inventory:
         log.debug('filter inventory')
         io['inventory'] = io['inventory'].select(**filter_inventory)
@@ -169,7 +189,16 @@ def start_correlate(io,
 
 
 def start_stack(io, key, outkey, subkey='', **kwargs):
-    """ """
+    """
+    Start stacking
+
+    :param io: |io|
+    :param key:  key to load correlations from
+    :param outkey: key to write stacked correlations to
+    :param subkey: only use a part of the correlations
+    :param \*\*kwargs: all other kwargs are passed to
+        `yam.stack.stack()` function
+    """
     fname = io['stack'] if 's' in _analyze_key(key) else io['corr']
     tasks = _get_existent(fname, key + subkey, 3)
     done_tasks = [t.replace(outkey, key) for t in
@@ -185,7 +214,18 @@ def start_stack(io, key, outkey, subkey='', **kwargs):
 
 def stretch_wrapper(groupname, fname, fname_stretch, outkey, filter=None,
                     **kwargs):
-    """ """
+    """
+    Wrapper around `~yam.stretch.stretch()`
+
+    :param groupname: group to load the correlations from
+    :param fname: file to load correlations from
+    :param fname_stretch: file for writing results
+    :param outkey: key to write stacked correlations to
+    :param filter: filter correlations before stretching
+        (bandpass, tuple with min and max frequency)
+    :param \*\*kwargs: all other kwargs are passed to
+        `~yam.stretch.stretch()` function
+    """
     stream = obspy.read(fname, 'H5', group=groupname)
     if filter:
         _filter(stream, filter)
@@ -195,7 +235,17 @@ def stretch_wrapper(groupname, fname, fname_stretch, outkey, filter=None,
 
 
 def start_stretch(io, key, subkey='', njobs=None, **kwargs):
-    """ """
+    """
+    Start stretching
+
+    :param io: |io|
+    :param key:  key to load correlations from
+    :param subkey: only use a part of the correlations
+    :param njobs: number of cores to use for computation,
+        might consume much memory, default: None -- use all available cores
+    :param \*\*kwargs: all other kwargs are passed to
+        `stretch_wrapper()` function
+    """
     fname = _get_fname(io, key)
     outkey = kwargs['outkey']
     tasks = _get_existent(fname, key + subkey, 3)
@@ -208,6 +258,7 @@ def start_stretch(io, key, subkey='', njobs=None, **kwargs):
 
 
 def _read_dict(group):
+    """Read a single stretching dictionary from group"""
     res = {'attrs': {}}
     for key, val in group.attrs.items():
         res['attrs'][key] = val
@@ -220,6 +271,7 @@ def _read_dict(group):
 
 
 def _iter_dicts(fname, groupname='/', level=3):
+    """Iterator yielding stretching dictionaries"""
     tasks = _get_existent(fname, groupname, level)
     with h5py.File(fname) as f:
         for task in tasks:
@@ -227,11 +279,20 @@ def _iter_dicts(fname, groupname='/', level=3):
 
 
 def read_dicts(fname, groupname='/', level=3):
-    """ """
+    """
+    Read dictionaries with stretching results
+
+    :param fname: file name
+    :param groupname: specify group to read
+    :param level: level in index where the data was written, defaults to 3 and
+        should not be changed
+    :return: list of dictionaries with stretching results
+    """
     return [obj[1] for obj in _iter_dicts(fname, groupname, level)]
 
 
 def _iter_streams(fname, groupname='/', level=3):
+    """Iterator yielding correlation streams"""
     tasks = _get_existent(fname, groupname, level)
     for task in tasks:
         stream = obspy.read(fname, 'H5', group=task)
@@ -239,6 +300,7 @@ def _iter_streams(fname, groupname='/', level=3):
 
 
 def _iter_h5(io, key, level=3):
+    """Iterator yielding streams or stretching results, depending on key"""
     is_stretch = 't' in _analyze_key(key)
     fname = _get_fname(io, key)
     iter_ = _iter_dicts if is_stretch else _iter_streams
@@ -273,6 +335,9 @@ def _get_print2():
 
 
 def _get_data_files(data):
+    """
+    Construct a glob expression from the data expression and return file names
+    """
     from obspy import UTCDateTime as UTC
     kw = dict(network='*', station='*', location='*', channel='*',
               t=UTC('2211-11-11 11:11:11'))
@@ -302,6 +367,16 @@ def _print_info_helper(key, io):
 
 
 def info(io, key=None, subkey='', config=None, **unused_kwargs):
+    """
+    Print information about yam project
+
+    :param io: |io|
+    :param key: key to print infos about
+        (key inside HDF5 file, or one of data, stations,
+        default: None -- print overview)
+    :param subkey: only print part of the HDF5 file
+    :param config: list of configuration dictionaries
+    """
     print2 = _get_print2()
     data_plugin = io.get('data_plugin')
     if key is None:
@@ -360,6 +435,7 @@ def info(io, key=None, subkey='', config=None, **unused_kwargs):
 
 def _load_data(seedid, day, data, data_format, key='data',
                **prep_kw):
+    """Load preprocessed or raw data"""
     from obspy import UTCDateTime as UTC
     from yam.util import _seedid2meta
     from yam.correlate import get_data, preprocess
@@ -377,6 +453,24 @@ def _load_data(seedid, day, data, data_format, key='data',
 
 def load(io, key, seedid=None, day=None, do='return', prep_kw={},
          fname=None, format=None):
+    """
+    Load object and do something with it
+
+    :param io: io
+    :param key: key of object to load
+        (key inside HDF5 file, or one of data, prepdata, stations)
+    :param seedid: seed id of a  channel (for data or prepdata)
+    :param day: |UTC| object with day (for data or prepdata)
+    :param do: specifies what to do with the object, default is ``'return'``
+        which simply returns the object, other possible values are
+        ``'print'`` -- print object (used by print command),
+        ``'load'`` -- load object in IPython session (used by load command),
+        ``'export'`` -- export correlations to different file format
+        (used by export command)
+    :param dict prep_kw: options passed to preprocess (for prepdata only)
+    :param fname: file name (for export command)
+    :param format: target format (for export command)
+    """
     if key == 'stations':
         obj = io['inventory']
     elif key in ('data', 'prepdata'):
@@ -420,6 +514,22 @@ def load(io, key, seedid=None, day=None, do='return', prep_kw={},
 def plot(io, key, plottype=None, seedid=None, day=None, prep_kw={},
          corrid=None, show=False,
          **kwargs):
+    """
+    Plot everything
+
+    :param io: |io|
+    :param key: key of objects to plot, or one of stations, data, prepdata
+    :param plottype: plot type to use
+        (non default values are ``'vs_dist'`` and ``'wiggle'`` for
+        correlation plots)
+    :param seedid: seed id of a  channel (for data or prepdata)
+    :param day: |UTC| object with day (for data or prepdata)
+    :param dict prep_kw: options passed to preprocess (for prepdata only)
+    :param corrid: correlation configuration (for prepdata only)
+    :param show: show interactive plot
+    :param \*\*kwargs: all other kwargs are passed to
+        the corresponding plot function in `~yam.imaging` module
+    """
     import yam.imaging
     path = io['plot']
     if not os.path.exists(path):
@@ -468,6 +578,12 @@ def plot(io, key, plottype=None, seedid=None, day=None, prep_kw={},
 
 
 def remove(io, keys):
+    """
+    Remove one or several keys from HDF5 file
+
+    :param io: |io|
+    :param keys: list of keys to remove
+    """
     for key in keys:
         if '/' in key and key.split('/', 1) != '':
             from warnings import warn

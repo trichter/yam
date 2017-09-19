@@ -1,4 +1,5 @@
 # Copyright 2017 Tom Eulenfeld, GPLv3
+"""Stack correlations"""
 import numpy as np
 import obspy
 from obspy import UTCDateTime as UTC
@@ -7,7 +8,21 @@ from yam.util import _corr_id, _time2sec, IterTime
 
 
 def stack(stream, length=None, move=None):
-    """ """
+    """
+    Stack traces in stream by correlation id
+
+    :param stream: |Stream| object with correlations
+    :param length: time span of one trace in the stack in seconds
+        (alternatively a string consisting of a number and a unit
+        -- ``'d'`` for days and ``'h'`` for hours -- can be specified,
+        i.e. ``'3d'`` stacks together all traces inside a three days time
+        window, default: None, which stacks together all traces)
+    :param move: define a moving stack, float or string,
+        default: None -- no moving stack,
+        if specified move usually is smaller than length to get an overlap
+        in the stacked traces
+    :return: |Stream| object with stacked correlations
+    """
     stream.sort()
     stream_stack = obspy.Stream()
     ids = {_corr_id(tr) for tr in stream}

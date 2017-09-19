@@ -1,5 +1,5 @@
 # Copyright 2017, Tom Eulenfeld, GPLv3
-
+"""Stretch correlations"""
 import logging
 import numpy as np
 from warnings import warn
@@ -11,15 +11,32 @@ import yam.stack
 log = logging.getLogger('yam.stretch')
 
 
-def stretch(stream, reftr=None, stretch=None, str_range=10, nstr=100,
+def stretch(stream, reftr=None, str_range=10, nstr=100,
             time_windows=None,
             time_windows_relative=None, sides='right',
             max_lag=None, time_period=None
             ):
     """
-    time_windows:
-        ((5, 10, 15), 5) -- 3 time windows, start in sec, length in sec
+    Stretch traces in stream and return similarity matrix
 
+    See e.g. Richter et al. (2015) for a description of the procedure.
+
+    :param stream: |Stream| object with correlations
+    :param reftr: reference trace -- not implemented yet, the reference
+        is the stack of the stream
+    :param float str_range: stretching range in percent
+    :param int nstr: number of values in stretching vector
+    :param time_windows: definition of time windows in the correlation --
+        tuple of length 2, first entry: tuple of start times in seconds,
+        second entry: length in seconds, e.g. ``((5, 10, 15), 5)`` defines
+        three time windows of length 5 seconds starting at 5, 10, 15 seconds
+    :param time_windows_relative: time windows can be defined relative to a
+        velocity, default None or 0 -- time windows relative to zero leg time,
+        otherwise velocity is given in km/s
+    :param max_lag: max lag time in seconds, stream is trimmed to
+        ``(-max_lag, max_lag)`` before stretching
+    :param time_period: use correlations only from this time span
+        (tuple of dates)
     """
     ids = {_corr_id(tr) for tr in stream}
     if len(ids) != 1:

@@ -1,5 +1,5 @@
 # Copyright 2017 Tom Eulenfeld, GPLv3
-"""Routines for preprocessing, correlation and stacking"""
+"""Preprocessing and correlation"""
 import itertools
 import logging
 
@@ -23,7 +23,7 @@ def _fill_array(data, mask=None, fill_value=None):
     """
     Fill masked numpy array with value without demasking.
 
-    Additonally set fill_value to value.
+    Additionally set fill_value to value.
     If data is not a MaskedArray returns silently data.
     """
     # TODO: get some gappy data and check if all calls to this function are
@@ -41,25 +41,24 @@ def _fill_array(data, mask=None, fill_value=None):
 def time_norm(data, method, clip_factor=1, clip_set_zero=False,
               mute_parts=48, mute_factor=2):
     """
-    Calculates normalized data. See e.g. Bensen et al. (2007)
+    Calculate normalized data, see e.g. Bensen et al. (2007)
 
-    Method is a string. There are the following methods:
-
-    :param data: data to manipulate
-    :param method:
+    :param data: numpy array with data to manipulate
+    :param str method:
         1bit: reduce data to +1 if >0 and -1 if <0\n
         clip: clip data to the root mean square (rms)\n
         mute_envelope: calculate envelope and set data to zero where envelope
-        os larger than specified
-    :param clip_factor: multiply std with this value before cliping
-    :param clip_mask: instead of clipping, set the values to zero and mask
+        is larger than specified
+    :param float clip_factor: multiply std with this value before cliping
+    :param bool clip_mask: instead of clipping, set the values to zero and mask
         them
-    :param mute_parts: mean of the envelope is calculated by dividing the
+    :param int mute_parts: mean of the envelope is calculated by dividing the
         envelope into several parts, the mean calculated in each part and
         the median of this averages defines the mean envelope
-    :param mute_factor: mean of envelope multiplied by this
+    :param float mute_factor: mean of envelope multiplied by this
         factor defines the level for muting
 
+    :return: normalized data
     """
     mask = np.ma.getmask(data)
     if method == '1bit':
@@ -87,7 +86,7 @@ def time_norm(data, method, clip_factor=1, clip_set_zero=False,
 # http://azitech.wordpress.com/
 # 2011/03/15/designing-a-butterworth-low-pass-filter-with-scipy/
 def _filter_resp(freqmin, freqmax, corners=2, zerophase=False, sr=None,
-                N=None, whole=False):
+                 N=None, whole=False):
     """
     Complex frequency response of Butterworth-Bandpass Filter.
 
@@ -117,7 +116,7 @@ def _filter_resp(freqmin, freqmax, corners=2, zerophase=False, sr=None,
         raise ValueError(msg)
     [b, a] = iirfilter(corners, [low, high], btype='band',
                        ftype='butter', output='ba')
-    freqs, values = freqz(b, a, N, whole=whole)  # @UnusedVariable
+    freqs, values = freqz(b, a, N, whole=whole)
     if zerophase:
         values *= np.conjugate(values)
     return freqs, values
@@ -126,14 +125,19 @@ def _filter_resp(freqmin, freqmax, corners=2, zerophase=False, sr=None,
 def spectral_whitening(data, sr=None, smooth=None, filter=None,
                        waterlevel=1e-8):
     """
-    Apply spectral whitening to data.
+    Apply spectral whitening to data
 
     Data is divided by its smoothed (Default: None) amplitude spectrum.
 
-    :param data: data to manipulate
+    :param data: numpy array with data to manipulate
     :param sr: sampling rate (only needed for smoothing)
     :param smooth: length of smoothing window in Hz
         (default None -> no smoothing)
+    :param filter: filter spectrum with bandpass after whitening
+        (tuple with min and max frequency)
+    :param waterlevel: waterlevel relative to mean of spectrum
+
+    :return: whitened data
     """
     mask = np.ma.getmask(data)
     N = len(data)
@@ -157,7 +161,7 @@ def correlate_traces(tr1, tr2, maxshift=3600):
     """
     Return trace of cross-correlation of two input traces
 
-    :param tr1,tr2: two `~obspy.core.trace.Trace`  objects
+    :param tr1,tr2: two |Trace| objects
     :param maxsift: maximal shift in correlation in seconds
     """
     n1, s1, l1, c1 = tr1.id.split('.')
@@ -183,8 +187,7 @@ def _iter_station_meta(inventory, components):
     """
     Return iterator yielding metadata per station and day.
 
-    :param inventory: `~obspy.core.inventory.inventory.Inventory` instance
-        with station and channel information
+    :param inventory: |Inventory| object with station and channel information
     :param components: components to yield
     """
     stations = __get_stations(inventory)
@@ -201,15 +204,15 @@ def get_data(smeta, data, data_format, day, overlap=0, edge=0,
              trim_and_merge=False):
     """Return data of one day
 
-    :param smeta: station metadata
+    :param smeta: dictionary with station metadata
     :param data: string with expression of data day files or
         function that returns the data (aka get_waveforms)
     :param data_format: format of data
-    :param day: day as UTCDateTime
+    :param day: day as |UTC| object
     :param overlap: overlap to next day in seconds
     :param edge: additional time span requested from day before and after
         in seconds
-    :param trim_and_merge: weather data is trimed and merged
+    :param trim_and_merge: weather data is trimmed to day boundaries and merged
     """
     next_day = day + 24 * 3600
     if not isinstance(data, str):
@@ -256,16 +259,16 @@ def preprocess(stream, day=None, inventory=None,
                spectral_whitening_options=None,
                downsample_before=None, downsample=None):
     """
-    Preprocess Stream of 1 day.
+    Preprocess stream of 1 day
 
-    :param stream: Stream object
-    :param day: UTCDateTime object of day (for trimming)
-    :param inventory: Inventory object (for response removal)
-    :param bool remove_response: Remove reponse
-    :param filter: min and max frequency of filter
+    :param stream: |Stream| object
+    :param day: |UTC| object of day (for trimming)
+    :param inventory: |Inventory| object (for response removal)
+    :param bool remove_response: remove response
+    :param filter: min and max frequency of bandpass filter
     :param normalizaton: ordered list of normalizations to apply,
-        'sprectal_whitening' an/or one or several of the time normalizations
-        listed in `time_norm`
+        ``'sprectal_whitening'`` for `spectral_whitening` and/or
+        one or several of the time normalizations listed in `time_norm`
     :param downsample_before: downsample before preprocessing,
         target frequency
     :param downsample: downsample after preprocessing,
@@ -330,7 +333,42 @@ def correlate(io, day, outkey,
               keep_correlations=False,
               stack='1day',
               **preprocessing_kwargs):
-    """Correlate data of one day"""
+    """
+    Correlate data of one day
+
+    :param io: io config dictionary
+    :param day: |UTC| object with day
+    :param outkey: the output key for the HDF5 index
+    :param edge: additional time span requested from day before and after
+        in seconds
+    :param length: length of correlation in seconds (string possible)
+    :param overlap: length of overlap in seconds (string possible)
+    :param discard: discard correlations with less data coverage
+        (float from interval [0, 1])
+    :param only_auto_correlations: Only correlate stations with itself
+        (different components possible)
+    :param station_combinations: specify station combinations
+        (e.g. ``'CX.PATCX-CX.PB01``, network code can be
+        omitted, e.g. ``'PATCX-PB01'``, default: all)
+    :param component_combinations: component combinations to calculate,
+        tuple of strings with length two, e.g. ``('ZZ', 'ZN', 'RR')``,
+        if `'R'` or `'T'` is specified, components will be rotated after
+        preprocessing, default: all component combinations (not rotated)
+    :param max_lag: max time lag in correlations in seconds
+    :param keep_correlatons: write correlations into HDF5 file (dafault: False)
+    :param stack: stack correlations and write stacks into HDF5 file
+        (default: ``'1d'``, must be smaller than one day or one day)
+
+        .. note::
+
+            If you want to stack larger time spans
+            use the separate stack command on correlations or stacked
+            correlations.
+
+    :param \*\*preprocessing_kwargs: all other kwargs are passed to
+        `preprocess`
+
+    """
     inventory = io['inventory']
     length = _time2sec(length)
     overlap = _time2sec(overlap)
@@ -367,9 +405,9 @@ def correlate(io, day, outkey,
         stream1 = Stream([tr for tr in stream if tr.id[:-1] == station1])
         stream2 = Stream([tr for tr in stream if tr.id[:-1] == station2])
         c1 = inventory.get_coordinates(
-                stream1[0].id, datetime=stream1[0].stats.endtime)
+            stream1[0].id, datetime=stream1[0].stats.endtime)
         c2 = inventory.get_coordinates(
-                stream2[0].id, datetime=stream2[0].stats.endtime)
+            stream2[0].id, datetime=stream2[0].stats.endtime)
         args = (c1['latitude'], c1['longitude'],
                 c2['latitude'], c2['longitude'])
         dist, azi, baz = gps2dist_azimuth(*args)

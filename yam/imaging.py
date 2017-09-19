@@ -1,5 +1,21 @@
 # -*- coding: utf-8 -*-
 # Copyright 2017 Tom Eulenfeld, GPLv3
+"""
+Plotting functions
+
+Common arguments in plotting functions are:
+
+:stream: |Stream| object with correlations
+:b/fname: file or base name for the plot output
+:ext: file name extension (e.g. ``'.png'``)
+:figsize: figure size (tuple of inches)
+:trim: trim correlations around zero offset (tuple, e.g. ``(-30, 30)``)
+:time_period: show correlations only from this time span (tuple of dates)
+:line_style: style of a wiggle plot, see |Axes.plot| in matplotlib's documentation
+:param line_width: line width of wiggle plot
+
+|
+"""
 
 from copy import copy
 from collections import OrderedDict
@@ -57,13 +73,23 @@ def _align_values_for_pcolormesh(x):
 
 
 def plot_stations(inventory, fname, ext='.png', projection='local', **kwargs):
-    """ """
+    """
+    Plot station map
+
+    :param inventory: |Inventory| object with coordinates
+    :param projection,\*\*kwargs: passed to |Inventory.plot| method
+    """
     inventory.plot(projection, outfile=fname + ext, **kwargs)
 
 
 def plot_data(data, fname, ext='.png', show=False,
               type='dayplot', **kwargs):
-    """ """
+    """
+    Plot data (typically one day)
+
+    :param data: |Stream| object holding the data
+    :param type,\*\*kwargs: passed to |Stream.plot| method
+    """
     label = os.path.basename(fname)
     data.plot(type=type, outfile=fname + ext, title=label)
     if show:
@@ -74,7 +100,15 @@ def plot_corr_vs_dist(
         stream, fname, figsize=(10, 5), ext='.png',
         components='ZZ', line_style='k', scale=1, dist_unit='km',
         trim=None, time_period=None):
-    """ """
+    """
+    Plot stacked correlations versus inter-station distance
+
+    This plot can be created from the command line with ``--plottype vs_dist``.
+
+    :param components: component combination to plot
+    :param scale: scale wiggles (default 1)
+    :param dist_unit: one of ``('km', 'm', 'deg')``
+    """
     # scale relative to axis
     traces = [tr for tr in stream if
               _corr_id(tr).split('-')[0][-1] + _corr_id(tr)[-1] == components]
@@ -107,7 +141,16 @@ def plot_corr_vs_time_wiggle(
         stream, fname, figsize=(10, 5), ext='.png',
         line_style='k', scale=20, line_width=0.5,
         trim=None, time_period=None):
-    """ """
+    """
+    Plot correlation wiggles versus time
+
+    .. image:: _static/corr_vs_time_wiggle.png
+       :width: 30%
+
+    This plot can be created from the command line with ``--plottype wiggle``.
+
+    :param scale: scale of wiggles (default 20)
+    """
     # scale relative to neighboring wiggles
     ids = {_corr_id(tr) for tr in stream}
     if len(ids) != 1:
@@ -135,7 +178,19 @@ def plot_corr_vs_time(
         stream, fname, figsize=(10, 5), ext='.png',
         vmax=None, cmap='RdBu_r', trim=None, time_period=None,
         show_stack=True, line_style='k', line_width=1):
-    """ """
+    """
+    Plot correlations versus time
+
+    .. image:: _static/corr_vs_time.png
+       :width: 30%
+    .. image:: _static/corr_vs_time_zoom.png
+       :width: 30%
+    Default correlation plot.
+
+    :param vmax: maximum value in colormap
+    :param cmap: used colormap
+    :param show_stack: show a wiggle plot of the stack at top
+    """
     ids = {_corr_id(tr) for tr in stream}
     if len(ids) != 1:
         warn('Different ids in stream: %s' % ids)
@@ -182,7 +237,23 @@ def plot_sim_mat(res, bname=None, figsize=(10, 5), ext='.png',
                  vmax=None, time_period=None, ylim=None, cmap='hot_r',
                  show_line=False, line_style='b', line_width=2,
                  time_window=None):
-    """ """
+    """
+    Plot similarity matrices
+
+    .. image:: _static/sim_mat.png
+       :width: 30%
+    Default plot for stretching results.
+
+    :param res: dictionary with stretching results
+    :param vmax: maximum value in colormap
+    :param ylim: set display limit of velocity variations (tuple of percents)
+    :param cmap: used colormap
+    :param show_line: show line connecting best correlations for each time
+    :param time_window: do not create figures for each time window in the results
+        dictionary, but only for one time window with given index
+
+
+    """
     labelexpr = '{}_tw{:02d}_{:05.1f}s-{:05.1f}s'
     figs = []
     for itw, tw in enumerate(res['lag_time_windows']):
