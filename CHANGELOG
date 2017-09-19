@@ -1,4 +1,5 @@
 dev:
+  * add exhaustive online documentation
   * add possibility to correlate "R" and "T" rotated components (experimental)
   * add downsample_before option
 v0.2.1:
