@@ -42,7 +42,7 @@ def _write_stream(queue):
             break
 
 
-def write_dict(dict_, fname, mode='a'):
+def write_dict(dict_, fname, mode='a', libver='latest'):
     """
     Write similarity matrix into HDF5 file
 
@@ -50,8 +50,9 @@ def write_dict(dict_, fname, mode='a'):
         (output from `~yam.stretch.stretch()`)
     :param fname: file name
     :param mode: file mode (default ``'a'`` -- write into file)
+    :param libver: use latest version of HDF5 file format
     """
-    with h5py.File(fname, mode=mode) as f:
+    with h5py.File(fname, mode=mode, libver=libver) as f:
         f.attrs['file_format_stretch'] = 'yam'
         f.attrs['version_stretch'] = yam.__version__
         if 'index_stretch' not in f.attrs:
@@ -273,7 +274,7 @@ def _read_dict(group):
 def _iter_dicts(fname, groupname='/', level=3):
     """Iterator yielding stretching dictionaries"""
     tasks = _get_existent(fname, groupname, level)
-    with h5py.File(fname) as f:
+    with h5py.File(fname, 'r') as f:
         for task in tasks:
             yield task, _read_dict(f[task])
 
