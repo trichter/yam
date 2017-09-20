@@ -147,7 +147,10 @@ def _todo_tasks(tasks, done_tasks):
 def start_correlate(io,
                     filter_inventory=None,
                     startdate='1990-01-01', enddate='2020-01-01',
-                    njobs=None, **kwargs):
+                    njobs=None,
+                    keep_correlations=False,
+                    stack='1d',
+                    **kwargs):
     """
     Start correlation
 
@@ -158,7 +161,7 @@ def start_correlate(io,
     :param njobs: number of cores to use for computation, days are computed
         parallel, this might consume much memory, default: None -- use all
         available cores
-    :param \*\*kwargs: all other kwargs are passed to
+    :param keep_correlations,stack,\*\*kwargs: all other kwargs are passed to
         `~yam.correlate.correlate()` function
     """
     if filter_inventory:
@@ -171,11 +174,11 @@ def start_correlate(io,
     # If a day exits for one combination and not for another station
     # combination, it will be marked as done
     done_tasks = None
-    if kwargs.get('stack') is not None:
-        key2 = kwargs['outkey'] + '_s' + kwargs['stack']
+    if stack is not None:
+        key2 = kwargs['outkey'] + '_s' + stack
         done_tasks = [UTC(t[-16:-6]) for t in
                       _get_existent(io['stack'], key2, 4)]
-    if kwargs.get('keep_correlations', False):
+    if keep_correlations:
         key2 = kwargs['outkey']
         done_tasks2 = [UTC(t[-16:-6]) for t in
                        _get_existent(io['corr'], key2, 4)]
@@ -184,6 +187,7 @@ def start_correlate(io,
         else:
             done_tasks = [t for t in done_tasks if t in done_tasks2]
     tasks = _todo_tasks(tasks, done_tasks)
+    kwargs.update({'keep_correlations': keep_correlations, 'stack': stack})
     do_work = functools.partial(correlate, io, **kwargs)
     start_parallel_jobs(tasks, do_work, _write_stream, njobs=njobs)
     log.info('finished preprocessing and correlation')
