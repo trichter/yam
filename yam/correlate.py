@@ -390,8 +390,6 @@ def correlate(io, day, outkey,
     # start correlation
     next_day = day + 24 * 3600
     stations = [tr.id[:-1] for tr in stream]
-    log.debug(components)
-    log.debug(stations)
     for station1, station2 in itertools.combinations_with_replacement(
             stations, 2):
         if only_auto_correlation and station1 != station2:
