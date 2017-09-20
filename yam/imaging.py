@@ -103,6 +103,9 @@ def plot_corr_vs_dist(
     """
     Plot stacked correlations versus inter-station distance
 
+    .. image:: _static/corr_vs_dist.png
+       :width: 30%
+
     This plot can be created from the command line with ``--plottype vs_dist``.
 
     :param components: component combination to plot
@@ -146,6 +149,8 @@ def plot_corr_vs_time_wiggle(
 
     .. image:: _static/corr_vs_time_wiggle.png
        :width: 30%
+    .. image:: _static/corr_vs_time_wiggle2.png
+       :width: 40%
 
     This plot can be created from the command line with ``--plottype wiggle``.
 
