@@ -26,8 +26,8 @@ ENTRY_POINTS = {
     'console_scripts': ['yam-runtests = yam.tests:run',
                         'yam = yam.main:run_cmdline']}
 
-REQUIRES = ['h5py', 'numpy', 'obspy', 'obspyh5>=0.3', 'scipy', 'setuptools',
-            'tqdm']
+REQUIRES = ['h5py', 'numpy', 'obspy>=1.1', 'obspyh5>=0.3', 'scipy',
+            'setuptools', 'tqdm']
 
 CLASSIFIERS = [
     'Environment :: Console',
