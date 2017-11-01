@@ -34,14 +34,11 @@ Installation
 
 Dependencies of yam are ``obspy>=1.1 obspyh5>=0.3 h5py``.
 Optional dependencies are ``IPython`` and ``cartopy``.
-Because ObsPy v1.1 is not yet released, the development version of ObsPy has to be used in the meantime.
 The recommended way to install yam is via `anaconda <https://docs.anaconda.com/anaconda/install.html>`_ and pip::
 
     conda --add channels conda-forge
     conda create -n yam python=3 obspy h5py cartopy IPython
     source activate yam
-    conda uninstall obspy
-    pip install git+https://github.com/obspy/obspy.git
     pip install yam
 
 After that, you can run the tests with ``yam-runtests`` and check if everything is installed properly.
