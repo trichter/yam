@@ -91,7 +91,7 @@ def _get_kwargs(kwargs, id_):
     return kw
 
 
-def run(command, conf=None, tutorial=False, **args):
+def run(command, conf=None, tutorial=False, pdb=False, **args):
     """Main entry point for a direct call from Python
 
     Example usage:
@@ -112,6 +112,16 @@ def run(command, conf=None, tutorial=False, **args):
     E.g. ``run(conf='conf.json', bla='bla')`` will set bla configuration
     value to ``'bla'``.
     """
+    if pdb:
+        import traceback, pdb
+
+        def info(type, value, tb):
+            traceback.print_exception(type, value, tb)
+            print
+            # ...then start the debugger in post-mortem mode.
+            pdb.pm()
+
+        sys.excepthook = info
     if conf in ('None', 'none', 'null', ''):
         conf = None
     # Copy example files if create_config or tutorial
@@ -256,6 +266,8 @@ def run_cmdline(args=None):
     p.add_argument('--version', action='version', version=version)
     msg = 'configuration file to load (default: conf.json)'
     p.add_argument('-c', '--conf', default='conf.json', help=msg)
+    msg = 'if an exception occurs start the debugger'
+    p.add_argument('--pdb', action='store_true', help=msg)
 
     sub = p.add_subparsers(title='commands', dest='command')
     sub.required = True

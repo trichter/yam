@@ -441,6 +441,7 @@ def info(io, key=None, subkey='', config=None, **unused_kwargs):
 def _load_data(seedid, day, data, data_format, key='data',
                **prep_kw):
     """Load preprocessed or raw data"""
+
     from obspy import UTCDateTime as UTC
     from yam.util import _seedid2meta
     from yam.correlate import get_data, preprocess
