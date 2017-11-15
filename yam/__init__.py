@@ -128,8 +128,7 @@ Now you can try out some of the following commands:
 
 Of course, the plots do not look overwhelmingly for such a small dataset.
 
-An advanced tutorial can be studied
-`here <http://nbviewer.jupyter.org/github/trichter/notebooks/blob/master/notebooks/velocity_variations_patcx/velocity_variations_patcx.ipynb>`_.
+The readme in the Github repository links to a further advanced tutorial.
 
 
 Use your own data
