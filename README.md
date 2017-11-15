@@ -10,5 +10,5 @@ Yet another monitoring tool using correlations of ambient noise
 #### Resources
 
 * [Documentation](http://yam.readthedocs.io)
-* Showcase / advanced tutorial -> [notebook](http://nbviewer.jupyter.org/github/trichter/notebooks/blob/master/notebooks/velocity_variations_patcx/velocity_variations_patcx.ipynb)
+* Showcase / advanced tutorial -> [notebook](http://nbviewer.jupyter.org/github/trichter/notebooks/blob/master/yam_velocity_variations_patcx/processing_patcx.ipynb)
 * Get help at the [seistools](https://lserv.uni-jena.de/mailman/listinfo/seistools) mailing list
