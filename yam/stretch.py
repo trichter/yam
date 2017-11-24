@@ -1,5 +1,29 @@
 # Copyright 2017, Tom Eulenfeld, GPLv3
-"""Stretch correlations"""
+"""
+Stretch correlations
+
+The results are returned in a dictionary with the following entries:
+
+times -- 1D array, length N1
+  strings of starttimes of the traces
+velchange_values -- 1D array, length N2
+  velocity changes (%) corresponding to the used stretching factors
+  (assuming a homogeneous velocity change)
+lag_time_windows -- 2D array, dimension N3x2
+  used lag time windows
+sim_mat -- 3D array, dimension N1xN2xN3
+  similarity matrices for all lag time windows
+velchange_vs_time -- 2D array, dimension N1xN3
+  velocity changes (%) as a function of time
+  (value of highest correlation/similarity for each time)
+corr_vs_time -- 2D array, dimension N1xN3
+  correlation values as a function of time
+  (value of highest correlation/similarity for each time)
+attrs -- dictionary
+  metadata, e.g. network, station, channel information of both stations,
+  inter-station distance and parameters passed to the stretching function
+"""
+
 import logging
 import numpy as np
 from warnings import warn
@@ -17,7 +41,7 @@ def stretch(stream, reftr=None, str_range=10, nstr=100,
             max_lag=None, time_period=None
             ):
     """
-    Stretch traces in stream and return similarity matrix
+    Stretch traces in stream and return dictionary with results
 
     See e.g. Richter et al. (2015) for a description of the procedure.
 
