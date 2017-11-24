@@ -12,7 +12,7 @@ Common arguments in plotting functions are:
 :trim: trim correlations around zero offset (tuple, e.g. ``(-30, 30)``)
 :time_period: show correlations only from this time span (tuple of dates)
 :line_style: style of a wiggle plot, see |Axes.plot| in matplotlib's documentation
-:param line_width: line width of wiggle plot
+:line_width: line width of wiggle plot
 
 |
 """
