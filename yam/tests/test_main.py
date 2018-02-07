@@ -95,6 +95,7 @@ class TestCase(unittest.TestCase):
         self.assertTrue(os.path.exists(fname), msg='%s missing' % fname)
 
     def test_cli(self):
+        # TODO: reduce running time (215s on my PC)
         # create tutorial
         self.out('-h', 'print information about')
         self.out('--version', '.')
@@ -126,7 +127,7 @@ class TestCase(unittest.TestCase):
         self.out('-c conf2.json print prepdata CX.PATCX..BHZ 2010-02-03 1a')
 
         try:
-            self.out('plot stations')
+            self.out('plot stations')  # TODO: check running time (8%)
         except ImportError:
             pass
         else:
@@ -161,14 +162,14 @@ def get_data(starttime, endtime, **smeta):
 
         # check correlation
         t1 = time.time()
-        self.out('correlate 1')
+        self.out('correlate 1')  # TODO: reduce running time (17%)
         t2 = time.time()
         self.out('correlate 1 -v')
         t3 = time.time()
         if not self.permanent_tempdir:
             self.assertLess(t3 - t2, 0.5 * (t2 - t1))
-        self.out('correlate auto')
-        self.out('correlate 1a')
+        self.out('correlate auto')  # TODO: reduce running time  (14%)
+        self.out('correlate 1a')  # TODO: reduce running time   (5%)
         self.out('info', 'c1_s1d: 7 combs')
         self.out('info', 'c1a_s1d: 3 combs')
         self.out('info', 'cauto: 2 combs')
@@ -181,7 +182,7 @@ def get_data(starttime, endtime, **smeta):
         with self.assertWarnsRegex(UserWarning, 'only top level keys'):
             self.out('remove cauto/CX.PATCX-CX.PATCX')
         self.out('remove cauto')
-        self.out('correlate auto --njobs 1')
+        self.out('correlate auto --njobs 1')  # TODO: reduce running time (24%)
         cauto_info_seq = self.out('info cauto')
         self.assertEqual(cauto_info, cauto_info_seq)
 
@@ -213,7 +214,7 @@ def get_data(starttime, endtime, **smeta):
         self.out('stack c1_s1d 2dm1d')
         self.out('info',  'c1_s1d_s2dm1d: 7 combs')
         self.out('stack c1_s1d 1')
-        self.out('stack cauto 2')
+        self.out('stack cauto 2')  # TODO: reduce running time (5%)
         self.out('info',  'cauto_s2')
         self.out('remove c1_s1d_s2dm1d c1_s1d_s1')
 
