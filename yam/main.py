@@ -249,6 +249,16 @@ def run2(command, io,
             yam.commands.load(io, key=key + subkey, do='export', **args)
         else:
             yam.commands.plot(io, key + subkey, corrid=corrid, **args)
+    elif command == 'scan':
+        data_glob = yam.commands._get_data_glob(io['data'])
+        print('Suggested call to obspy-scan:')
+        if io.get('data_format') is not None:
+            print('obspy-scan -f %s %s' % (io['data_format'], data_glob))
+        else:
+            print('obspy-scan %s' % data_glob)
+        print('This will probably not work if you use the data_plugin '
+              'configuration. '
+              'For more options check obspy-scan -h.')
     else:
         raise ValueError('Unknown command')
     time_end = time.time()
@@ -285,6 +295,8 @@ def run_cmdline(args=None):
     p_info = sub.add_parser('info', help=msg)
     msg = 'print objects'
     p_print = sub.add_parser('print', help=msg)
+    msg = 'print suggested call for obspy-scan scipt (data availability)'
+    p_scan = sub.add_parser('scan', help=msg)
     msg = 'plot objects'
     p_plot = sub.add_parser('plot', help=msg)
     msg = 'load objects into IPython session'

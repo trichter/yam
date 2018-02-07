@@ -107,6 +107,7 @@ class TestCase(unittest.TestCase):
             self.out('info', 'Not found')
         self.out('create --tutorial')
         self.out('create --tutorial')
+        self.out('scan', 'obspy-scan')
 
         # check basics
         _replace_in_file('conf.json', 'conf2.json', '"io"', '"io",')

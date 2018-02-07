@@ -339,17 +339,23 @@ def _get_print2():
     return print2
 
 
-def _get_data_files(data):
+def _get_data_glob(data):
     """
-    Construct a glob expression from the data expression and return file names
+    Construct a glob expression from the data expression
     """
     from obspy import UTCDateTime as UTC
     kw = dict(network='*', station='*', location='*', channel='*',
               t=UTC('2211-11-11 11:11:11'))
     dataglob = data.format(**kw)
     dataglob = dataglob.replace('22', '*').replace('11', '*')
-    fnames = glob.glob(dataglob)
-    return fnames
+    return dataglob
+
+
+def _get_data_files(data):
+    """
+    Construct a glob expression from the data expression and return file names
+    """
+    return glob.glob(_get_data_glob(data))
 
 
 def _print_info_helper(key, io):
