@@ -4,6 +4,7 @@ dev:
   * add exhaustive online documentation
   * add possibility to correlate "R" and "T" rotated components (experimental)
   * add downsample_before option
+  * reduce run time of tests
 v0.2.1:
   * refactor part of the imaging module
   * rename some kwargs in imaging module

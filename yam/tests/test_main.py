@@ -31,6 +31,7 @@ class TestCase(unittest.TestCase):
         args = sys.argv[1:]
         self.verbose = '-v' in args
         self.permanent_tempdir = '-p' in args
+        self.less_data = '--full' not in args
         self.njobs = args[args.index('-n') + 1] if '-n'  in args else None
         if self.permanent_tempdir:
             tempdir = os.path.join(tempfile.gettempdir(), 'yam_test')
@@ -105,8 +106,9 @@ class TestCase(unittest.TestCase):
         self.out('create', '')
         if not self.permanent_tempdir:
             self.out('info', 'Not found')
-        self.out('create --tutorial')
-        self.out('create --tutorial')
+        cmd = 'create --tutorial' + ' --less-data' * self.less_data
+        self.out(cmd)
+        self.out(cmd)
         self.out('scan', 'obspy-scan')
 
         # check basics
@@ -116,16 +118,16 @@ class TestCase(unittest.TestCase):
         self.out('info stations', 'CX.PATCX..BHZ')
         self.out('info data', 'example_data/CX.PATCX')
         self.out('print stations', 'CX.PATCX..BHZ')
-        pr = self.out('print data CX.PATCX..BHZ 2010-02-03', '2010-02-03')
-        self.out('print data CX.PATCX..BHZ 2010-034', '2010-02-03')
-        self.out('print prepdata CX.PATCX..BHZ 2010-02-03 1', '864001 samples')
+        pr = self.out('print data CX.PB06..BHZ 2010-02-05', '2010-02-05')
+        self.out('print data CX.PATCX..BHZ 2010-036', '2010-02-05')
+        self.out('print prepdata CX.PATCX..BHZ 2010-02-05 1', 'samples')
         self.out('print data', 'seedid')
-        self.out('print prepdata CX.PATCX..BHZ 2010-02-03', 'corrid')
+        self.out('print prepdata CX.PATCX..BHZ 2010-02-05', 'corrid')
         # check remove_response on one day
         _replace_in_file(
             'conf.json', 'conf2.json', '{"clip_factor": 2},',
             '{"clip_factor":2, "clip_set_zero":true},"remove_response":true,')
-        self.out('-c conf2.json print prepdata CX.PATCX..BHZ 2010-02-03 1a')
+        self.out('-c conf2.json print prepdata CX.PATCX..BHZ 2010-02-05 1a')
 
         try:
             self.out('plot stations')  # TODO: check running time (8%)
@@ -133,10 +135,10 @@ class TestCase(unittest.TestCase):
             pass
         else:
             self.checkplot('stations.png')
-        self.out('plot data CX.PATCX..BHZ 2010-02-03')
-        self.checkplot('data_CX.PATCX..BHZ_2010-02-03.png')
-        self.out('plot prepdata CX.PATCX..BHZ 2010-02-03 1')
-        self.checkplot('prepdata_CX.PATCX..BHZ_2010-02-03_c1.png')
+        self.out('plot data CX.PATCX..BHZ 2010-02-05')
+        self.checkplot('data_CX.PATCX..BHZ_2010-02-05.png')
+        self.out('plot prepdata CX.PATCX..BHZ 2010-02-05 1')
+        self.checkplot('prepdata_CX.PATCX..BHZ_2010-02-05_c1.png')
 
         # check data_plugin
         data_plugin_file = """
@@ -158,7 +160,7 @@ def get_data(starttime, endtime, **smeta):
                          '"data_plugin": "data : get_data"')
         self.out('-c conf2.json info', 'data : get_data')
         self.out('-c conf2.json info data', 'data : get_data')
-        pr2 = self.out('-c conf2.json print data CX.PATCX..BHZ 2010-02-03')
+        pr2 = self.out('-c conf2.json print data CX.PB06..BHZ 2010-02-05')
         self.assertEqual(pr, pr2)
 
         # check correlation
@@ -174,10 +176,11 @@ def get_data(starttime, endtime, **smeta):
         self.out('info', 'c1_s1d: 7 combs')
         self.out('info', 'c1a_s1d: 3 combs')
         self.out('info', 'cauto: 2 combs')
-        cauto_info = self.out('info cauto', 'CX.PATCX/.BHZ-.BHZ/2010-02-03')
+        cauto_info = self.out('info cauto', 'CX.PATCX/.BHZ-.BHZ/2010-02-05')
         self.out('info c1_s1d/CX.PB06-CX.PB06/.BHZ-.BHZ', 'CX.PB06-CX.PB06')
         self.out('print cauto', '1201 samples')
-        self.out('print c1_s1d/CX.PB06-CX.PB06/.BHZ-.BHZ', '11 Trace')
+        expected = '%d Trace' % (2 if self.less_data else 11)
+        self.out('print c1_s1d/CX.PB06-CX.PB06/.BHZ-.BHZ', expected)
         # check if correlation without parallel processing gives the same
         # result keys
         with self.assertWarnsRegex(UserWarning, 'only top level keys'):
@@ -192,17 +195,17 @@ def get_data(starttime, endtime, **smeta):
                               '"time_period":[null,"2010-02-05"]}')
         self.out('plot c1_s1d --plottype vs_dist')
         self.checkplot('corr_vs_dist_c1_s1d_ZZ.png')
-        self.out('plot c1_s1d/CX.PATCX-CX.PB01 --plottype wiggle')
+        self.out('plot c1_s1d/CX.PATCX-CX.PB06 --plottype wiggle')
         self.out('plot cauto --plottype wiggle %s' % po)
-        bname = 'corr_vs_time_wiggle_c1_s1d_CX.PATCX-CX.PB01_'
+        bname = 'corr_vs_time_wiggle_c1_s1d_CX.PATCX-CX.PB06_'
         self.checkplot(bname + '.BHZ-.BHZ.png')
         self.checkplot(bname + '.BHN-.BHZ.png')
         bname = 'corr_vs_time_wiggle_cauto_CX.PATCX-CX.PATCX_'
         self.checkplot(bname + '.BHZ-.BHZ.png')
         self.checkplot(bname + '.BHN-.BHZ.png')
-        self.out('plot c1_s1d/CX.PATCX-CX.PB01')
+        self.out('plot c1_s1d/CX.PATCX-CX.PB06')
         self.out('plot cauto %s' % po)
-        bname = 'corr_vs_time_c1_s1d_CX.PATCX-CX.PB01_'
+        bname = 'corr_vs_time_c1_s1d_CX.PATCX-CX.PB06_'
         self.checkplot(bname + '.BHZ-.BHZ.png')
         self.checkplot(bname + '.BHN-.BHZ.png')
         bname = 'corr_vs_time_cauto_CX.PATCX-CX.PATCX_'
@@ -233,27 +236,29 @@ def get_data(starttime, endtime, **smeta):
                 '"time_period": [null, "2010-02-05"], "max_lag": 40, '
                 '"sides": "right"')
         self.out('-c conf2.json stretch cauto/CX.PATCX-CX.PATCX/.BHZ-.BHZ 2')
-        self.out('plot c1_s1d_t1/CX.PATCX-CX.PB01 %s' % po)
+        self.out('plot c1_s1d_t1/CX.PATCX-CX.PB06 %s' % po)
         self.out('plot cauto_t2 --plottype wiggle', 'not supported')
         self.out('plot cauto_t2')
         globexpr = os.path.join(self.plotdir, 'sim_mat_cauto_t2*.png')
         self.assertEqual(len(glob.glob(globexpr)), 6)
         globexpr = os.path.join(self.plotdir, 'sim_mat_c1_s1d_t1*.png')
         if not self.permanent_tempdir:
-            self.assertEqual(len(glob.glob(globexpr)), 6)
+            self.assertEqual(len(glob.glob(globexpr)), 9)
         self.out('plot c1_s1d_t1')
-        self.assertEqual(len(glob.glob(globexpr)), 21)
-        self.out('info', 'c1_s1d_t1: 7 combs')
+        num_plots = 15 if self.less_data else 21
+        self.assertEqual(len(glob.glob(globexpr)), num_plots)
+        num_combs = 5 if self.less_data else 7
+        self.out('info', 'c1_s1d_t1: %d combs' % num_combs)
         self.out('info cauto_t2', 'CX.PATCX-CX.PATCX/.BHZ-.BHZ')
         info_t = self.out('print cauto_t2', 'lag_time_windows')
         self.assertGreater(len(info_t.splitlines()), 100)  # lots of lines
 
         # check export
         fname = 'dayplot.mseed'
-        self.out('export data %s CX.PATCX..BHZ 2010-02-03' % fname)
+        self.out('export data %s CX.PB06..BHZ 2010-02-05' % fname)
         self.assertTrue(os.path.exists(fname), msg='%s missing' % fname)
         fname = 'dayplot.mseed'
-        self.out('export data %s CX.PATCX..BHZ 2010-02-03' % fname)
+        self.out('export data %s CX.PB06..BHZ 2010-02-05' % fname)
         self.assertTrue(os.path.exists(fname), msg='%s missing' % fname)
         fname = 'some_auto_corrs.h5'
         self.out('export cauto/CX.PATCX-CX.PATCX %s --format H5' % fname)

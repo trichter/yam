@@ -235,8 +235,9 @@ def stretch_wrapper(groupname, fname, fname_stretch, outkey, filter=None,
     if filter:
         _filter(stream, filter)
     stretchres = yam.stretch.stretch(stream, **kwargs)
-    stretchres['attrs']['key'] = outkey
-    stretch_wrapper.q.put((stretchres, fname_stretch))
+    if stretchres is not None:
+        stretchres['attrs']['key'] = outkey
+        stretch_wrapper.q.put((stretchres, fname_stretch))
 
 
 def start_stretch(io, key, subkey='', njobs=None, **kwargs):

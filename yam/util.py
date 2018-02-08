@@ -104,7 +104,7 @@ def _trim_time_period(stream, time_period):
     stream.traces = traces
 
 
-def create_config(conf='conf.json', tutorial=False):
+def create_config(conf='conf.json', tutorial=False, less_data=False):
     """Create JSON config file and download tutorial data if requested"""
     shutil.copyfile(resource_filename('yam', 'conf_example.json'), conf)
     temp_dir = os.path.join(tempfile.gettempdir(), 'yam_example_data')
@@ -115,14 +115,16 @@ def create_config(conf='conf.json', tutorial=False):
                      len([name for name in os.listdir(station_template)]))
     except FileNotFoundError:
         num_files = (0, 0)
-    if tutorial and num_files[0] < 56 and num_files[1] < 3:
+    if tutorial and (num_files[0] < (9 if less_data else 54) or
+                     num_files[1] < 3):
         print('Download example data from Geofon')
         from obspy import UTCDateTime as UTC
         from obspy.clients.fdsn.mass_downloader import (
             GlobalDomain, Restrictions, MassDownloader)
         domain = GlobalDomain()
         restrictions = Restrictions(
-            starttime=UTC('2010-02-01'), endtime=UTC('2010-02-15'),
+            starttime=UTC('2010-02-04' if less_data else '2010-02-01'),
+            endtime=UTC('2010-02-06' if less_data else '2010-02-15'),
             network='CX', station='PATCX', location=None,
             channel_priorities=["BH[ZN]"], chunklength_in_sec=86400,
             reject_channels_with_gaps=False, minimum_length=0.5)
@@ -130,22 +132,30 @@ def create_config(conf='conf.json', tutorial=False):
         mdl.download(domain, restrictions, template, station_template)
         mdl = MassDownloader(providers=['GFZ'])
         restrictions.station = 'PB06'
-        restrictions.endtime = UTC('2010-02-12')
+        if not less_data:
+            restrictions.endtime = UTC('2010-02-12')
         mdl.download(domain, restrictions, template, station_template)
         restrictions.station = 'PB01'
-        restrictions.endtime = UTC('2010-02-05 08:00:00')
+        restrictions.endtime = UTC('2010-02-04 08:00:00')
         restrictions.channel_priorities = ["BHZ"]
         mdl.download(domain, restrictions, template, station_template)
-        restrictions.starttime = UTC('2010-02-08 00:00:00')
-        restrictions.endtime = UTC('2010-02-09 23:55:00')
-        restrictions.channel_priorities = ["BHZ"]
-        mdl.download(domain, restrictions, template, station_template)
+        if not less_data:
+            restrictions.starttime = UTC('2010-02-08 00:00:00')
+            restrictions.endtime = UTC('2010-02-09 23:55:00')
+            restrictions.channel_priorities = ["BHZ"]
+            mdl.download(domain, restrictions, template, station_template)
     if tutorial:
         dest_dir = os.path.dirname(conf)
         dest_dir_data = os.path.join(dest_dir, 'example_data')
         dest_dir_inv = os.path.join(dest_dir, 'example_inventory')
         if not os.path.exists(dest_dir_data):
-            shutil.copytree(template, dest_dir_data)
+            if less_data:
+                ignore = shutil.ignore_patterns('*2010020[123]T000000Z__*',
+                                                '*2010020[6-9]T000000Z__*',
+                                                '*2010021?T000000Z__*')
+            else:
+                ignore = None
+            shutil.copytree(template, dest_dir_data, ignore=ignore)
         if not os.path.exists(dest_dir_inv):
             shutil.copytree(station_template, dest_dir_inv)
 

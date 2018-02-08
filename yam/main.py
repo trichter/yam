@@ -91,7 +91,8 @@ def _get_kwargs(kwargs, id_):
     return kw
 
 
-def run(command, conf=None, tutorial=False, pdb=False, **args):
+def run(command, conf=None, tutorial=False, less_data=False, pdb=False,
+        **args):
     """Main entry point for a direct call from Python
 
     Example usage:
@@ -128,7 +129,7 @@ def run(command, conf=None, tutorial=False, pdb=False, **args):
     if command == 'create':
         if conf is None:
             conf = 'conf.json'
-        create_config(conf, tutorial=tutorial)
+        create_config(conf, tutorial=tutorial, less_data=less_data)
         return
     # Parse config file
     if conf:
@@ -306,8 +307,9 @@ def run_cmdline(args=None):
            'preprocessed data can also be saved')
     p_export = sub.add_parser('export', help=msg)
 
-    msg = 'create example files for tutorial'
+    msg = 'additionaly create example files for tutorial'
     p_create.add_argument('--tutorial', help=msg, action='store_true')
+    p_create.add_argument('--less-data', help=SUPPRESS, action='store_true')
 
     msg = 'use the data defined by this key (processing chain)'
     p_stack.add_argument('key', help=msg)

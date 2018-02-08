@@ -1,12 +1,13 @@
 """
 Tests for the rf package.
 
-yam-runtests [-h] [-v] [-p] [-d] [-n num]
+yam-runtests [-h] [-v] [-p] [-d] [-f] [-n num]
 
 -h    short help
 -v    be verbose
 -p    use permanent tempdir
 -d    empty permanent tempdir at start
+--full   use full tutorial dataset (tests take longer)
 -n num   maximal number of cores to use (default: all)
 """
 

@@ -97,7 +97,7 @@
         "1a": { # "based_on" loads configuration from another id and overwrites the given parameters.
                 # This is also possible for the other configurations (e.g. "stretch").
                 "based_on": "1",
-                "enddate": "2010-02-03",
+                "enddate": "2010-02-05",
                 "normalization": ["clip", "spectral_whitening"],
                 "time_norm_options": {"clip_factor": 2},
                 "spectral_whitening_options": {"filter": [0.01, 0.5], "smooth": 0.5},

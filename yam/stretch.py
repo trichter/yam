@@ -61,6 +61,9 @@ def stretch(stream, reftr=None, str_range=10, nstr=100,
     :param time_period: use correlations only from this time span
         (tuple of dates)
     """
+    if len(stream) <= 1:
+        log.warning('For stretch the stream must have a minimum length of 2')
+        return
     ids = {_corr_id(tr) for tr in stream}
     if len(ids) != 1:
         warn('Different ids in stream: %s' % ids)
@@ -122,6 +125,7 @@ def stretch(stream, reftr=None, str_range=10, nstr=100,
     ltw1 = rel + np.array(time_windows[0])
     # convert streching to velocity change
     # -> minus at several places
+    print(tse['sim_mat'].shape)
     result = {'sim_mat': tse['sim_mat'][:, ::-1, :],
               'velchange_values': -tse['second_axis'][::-1] * 100,
               'times': times,
