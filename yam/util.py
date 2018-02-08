@@ -1,4 +1,4 @@
-# Copyright 2017 Tom Eulenfeld, GPLv3
+# Copyright 2017-2018 Tom Eulenfeld, GPLv3
 """Utility functions"""
 
 from importlib import import_module

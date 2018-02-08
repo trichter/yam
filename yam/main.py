@@ -1,4 +1,4 @@
-# Copyright 2017 Tom Eulenfeld, GPLv3
+# Copyright 2017-2018 Tom Eulenfeld, GPLv3
 """
 Command line interface and main entry point
 """

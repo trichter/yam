@@ -1,4 +1,4 @@
-# Copyright 2017 Tom Eulenfeld, GPLv3
+# Copyright 2017-2018 Tom Eulenfeld, GPLv3
 
 import unittest
 from pkg_resources import load_entry_point

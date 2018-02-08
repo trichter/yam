@@ -1,4 +1,4 @@
-# Copyright 2017 Tom Eulenfeld, GPLv3
+# Copyright 2017-2018 Tom Eulenfeld, GPLv3
 """Commands used by the CLI interface"""
 import functools
 import glob
