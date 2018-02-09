@@ -26,15 +26,13 @@ def _fill_array(data, mask=None, fill_value=None):
     Additionally set fill_value to value.
     If data is not a MaskedArray returns silently data.
     """
-    # TODO: get some gappy data and check if all calls to this function are
-    # really necessary
     if mask is not None and mask is not False:
         data = np.ma.MaskedArray(data, mask=mask, copy=False)
     if np.ma.is_masked(data) and fill_value is not None:
         data._data[data.mask] = fill_value
         np.ma.set_fill_value(data, fill_value)
-    elif not np.ma.is_masked(data):
-        data = np.ma.filled(data)
+#    elif not np.ma.is_masked(data):
+#        data = np.ma.filled(data)
     return data
 
 
@@ -60,16 +58,17 @@ def time_norm(data, method, clip_factor=1, clip_set_zero=False,
 
     :return: normalized data
     """
+    data = _fill_array(data, fill_value=0.)
     mask = np.ma.getmask(data)
     if method == '1bit':
-        data = np.sign(data)
+        np.sign(data, out=data)
     elif method == 'clip':
         std = np.std(data)
-        args = (data < -clip_factor * std, data > clip_factor * std)
         if clip_set_zero:
-            ind = np.logical_or(*args)
-            data[ind] = 0
+            args = (data < -clip_factor * std, data > clip_factor * std)
+            data[np.logical_or(*args)] = 0
         else:
+            args = (-clip_factor * std, clip_factor * std)
             np.clip(data, *args, out=data)
     elif method == 'mute_envelope':
         N = next_fast_len(len(data))
