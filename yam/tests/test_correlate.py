@@ -1,13 +1,14 @@
 # Copyright 2017-2018 Tom Eulenfeld, GPLv3
-
 import unittest
-from obspy import read
+
 import numpy as np
+from obspy import read
+from obspy.signal.cross_correlation import xcorr_max
 from scipy.signal import periodogram
 from scipy.fftpack import next_fast_len
 
-
-from yam.correlate import _fill_array, spectral_whitening, time_norm
+from yam.correlate import (_fill_array, correlate_traces, spectral_whitening,
+                           time_norm)
 
 
 class TestCase(unittest.TestCase):
@@ -164,7 +165,6 @@ class TestCase(unittest.TestCase):
 #        plt.legend()
 #        plt.show()
 
-
     def test_phase_shift(self):
         pass
 
@@ -172,7 +172,12 @@ class TestCase(unittest.TestCase):
         pass
 
     def test_correlate_traces(self):
-        pass
+        stream = read().sort()
+        tr = correlate_traces(stream[0], stream[1])
+        shift, corr = xcorr_max(tr.data)
+        self.assertLess(abs(shift / len(tr)), 0.01)
+        self.assertGreater(abs(corr), 0.2)
+        self.assertEqual(tr.id, 'RJOB.EHE.RJOB.EHN')
 
 
 def suite():
