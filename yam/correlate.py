@@ -256,7 +256,7 @@ def preprocess(stream, day=None, inventory=None,
                normalization=(),
                time_norm_options=None,
                spectral_whitening_options=None,
-               downsample_before=None, downsample=None):
+               downsample=None, decimate=None):
     """
     Preprocess stream of 1 day
 
@@ -268,10 +268,10 @@ def preprocess(stream, day=None, inventory=None,
     :param normalizaton: ordered list of normalizations to apply,
         ``'sprectal_whitening'`` for `spectral_whitening` and/or
         one or several of the time normalizations listed in `time_norm`
-    :param downsample_before: downsample before preprocessing,
+    :param downsample: downsample before preprocessing,
         target frequency
-    :param downsample: downsample after preprocessing,
-        target frequency
+    :param decimate: decimate further by given factor after preprocessing
+        (see Trace.decimate)
     :param \*_options: dictionary of options passed to the corresponding
         function
     """
@@ -285,12 +285,12 @@ def preprocess(stream, day=None, inventory=None,
         normalization = [normalization]
     for tr in stream:
         tr.data = tr.data.astype('float64')
-    if downsample_before:
+    if downsample:
         for tr in stream:
-            if tr.stats.sampling_rate % downsample_before == 0:
-                tr.decimate(int(tr.stats.sampling_rate) // downsample_before)
+            if tr.stats.sampling_rate % downsample == 0:
+                tr.decimate(int(tr.stats.sampling_rate) // downsample)
             else:
-                tr.interpolate(downsample_before, method='lanczos')
+                tr.interpolate(downsample, method='lanczos')
     stream.traces[:] = [tr for tr in stream if len(tr) > 9]
     for tr in stream:
         tr.detrend()
@@ -307,11 +307,8 @@ def preprocess(stream, day=None, inventory=None,
                                              **spectral_whitening_options)
             else:
                 tr.data = time_norm(tr.data, norm, **time_norm_options)
-        if downsample:
-            if tr.stats.sampling_rate % downsample == 0:
-                tr.decimate(int(tr.stats.sampling_rate) // downsample)
-            else:
-                tr.interpolate(downsample, method='lanczos')
+        if decimate:
+            tr.decimate(decimate, no_filter=True)
     if len({tr.stats.sampling_rate for tr in stream}) > 1:
         raise NotImplementedError('Different sampling rates')
     stream.merge(method=1, interpolation_samples=10)
