@@ -285,15 +285,23 @@ def preprocess(stream, day=None, inventory=None,
         normalization = [normalization]
     for tr in stream:
         tr.data = tr.data.astype('float64')
-    if downsample:
-        for tr in stream:
-            if tr.stats.sampling_rate % downsample == 0:
-                tr.decimate(int(tr.stats.sampling_rate) // downsample)
-            else:
-                tr.interpolate(downsample, method='lanczos')
-    stream.traces[:] = [tr for tr in stream if len(tr) > 9]
+    if downsample is None:
+        downsample = min(tr.stats.sampling_rate for tr in stream)
     for tr in stream:
-        tr.detrend()
+        sr = tr.stats.sampling_rate
+        if downsample != sr:
+            if sr % downsample == 0:
+                tr.decimate(int(sr) // downsample)
+            else:
+                # anti-aliasing filter
+                if sr / downsample > 16:
+                    msg = ('Automatic filter design is unstable for decimation'
+                           ' factors above 16. '
+                           'Manual decimation is necessary.')
+                    raise ArithmeticError(msg)
+                tr.filter('lowpass_cheby_2', freq=0.5 * downsample,
+                          maxorder=12)
+                tr.interpolate(downsample, method='lanczos', a=10)
         check_and_phase_shift(tr)
     if remove_response:
         stream.remove_response(inventory, **remove_response_options)
@@ -309,8 +317,7 @@ def preprocess(stream, day=None, inventory=None,
                 tr.data = time_norm(tr.data, norm, **time_norm_options)
         if decimate:
             tr.decimate(decimate, no_filter=True)
-    if len({tr.stats.sampling_rate for tr in stream}) > 1:
-        raise NotImplementedError('Different sampling rates')
+    assert len({tr.stats.sampling_rate for tr in stream}) == 1
     stream.merge(method=1, interpolation_samples=10)
     if day is not None:
         next_day = day + 24 * 3600

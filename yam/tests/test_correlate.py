@@ -170,7 +170,6 @@ class TestCase(unittest.TestCase):
         tr = read()[0]
         dt = tr.stats.delta
         t = tr.stats.starttime = UTC('2018-01-01T00:00:10.000000Z')
-        print(tr.stats.sampling_rate)
         tr2 = tr.copy()
         check_and_phase_shift(tr2)
         self.assertEqual(tr2, tr)
