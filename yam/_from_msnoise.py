@@ -3,6 +3,9 @@
 
 import numpy as np
 from scipy.fftpack import fft, ifft, fftfreq, next_fast_len
+import logging
+
+log = logging.getLogger('yam.correlate')
 
 
 def check_and_phase_shift(trace):
@@ -16,11 +19,10 @@ def check_and_phase_shift(trace):
     if dt != 0.:
         if dt <= (trace.stats.delta / 2.):
             dt = -dt
-#            direction = "left"
         else:
             dt = (trace.stats.delta - dt)
-#            direction = "right"
-#        log.debug("correcting time by %.6fs"%dt)
+        log.debug("correcting time of trace %s with starttime %s by %.6fs",
+                  trace.id, trace.stats.starttime, dt)
         trace.detrend(type="demean")
         trace.detrend(type="simple")
         trace.taper(max_percentage=None, max_length=1.0)
