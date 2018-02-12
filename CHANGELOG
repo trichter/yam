@@ -3,7 +3,8 @@ dev:
   * add debug option (--pdb)
   * add exhaustive online documentation
   * add possibility to correlate "R" and "T" rotated components (experimental)
-  * add downsample_before option
+  * downsample now performed before preprocessing
+  * add decimate option (downsampling after preprocessing)
   * reduce run time of tests
   * fix: timenorm "clip" was not correctly working
   * fix: timenorm "mute_envelope" was not working with masked data
