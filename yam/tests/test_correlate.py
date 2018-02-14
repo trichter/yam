@@ -129,7 +129,7 @@ class TestCase(unittest.TestCase):
 #        import matplotlib.pyplot as plt
 #        ax1 = plt.subplot(221)
 #        plt.title('contiguous data')
-#        plt.plot(times, data1 / np.max(data1) / 5, label='data')
+#        plt.plot(times, 20 * data1, label='data')
 #        plt.plot(times, wdata1, label='whitened')
 #        plt.plot(times, wdata1_f, label='+filtered')
 #        plt.plot(times, wdata1_sm, label='+smoothed')

@@ -140,20 +140,19 @@ def spectral_whitening(data, sr=None, smooth=None, filter=None,
     """
     data = _fill_array(data, fill_value=0.)
     mask = np.ma.getmask(data)
-    N = len(data)
-    nfft = next_fast_len(N)
+    nfft = next_fast_len(len(data))
     spec = fft(data, nfft)
-    spec_ampl = np.sqrt(np.abs(np.multiply(spec, np.conjugate(spec))))
+    spec_ampl = np.abs(spec)
+    spec_ampl /= np.max(spec_ampl)
     if smooth:
-        smooth = int(smooth * N / sr)
+        smooth = int(smooth * nfft / sr)
         spec_ampl = ifftshift(smooth_func(fftshift(spec_ampl), smooth))
     # save guard against division by 0
-    wl = waterlevel * np.mean(spec_ampl)
-    spec_ampl[spec_ampl < wl] = wl
+    spec_ampl[spec_ampl < waterlevel] = waterlevel
     spec /= spec_ampl
     if filter is not None:
         spec *= _filter_resp(*filter, sr=sr, N=len(spec), whole=True)[1]
-    ret = np.real(ifft(spec, nfft)[:N])
+    ret = np.real(ifft(spec, nfft)[:len(data)])
     return _fill_array(ret, mask=mask, fill_value=0.)
 
 
