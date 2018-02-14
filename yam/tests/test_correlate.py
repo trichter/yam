@@ -7,7 +7,7 @@ from obspy.signal.cross_correlation import correlate, xcorr_max
 from scipy.signal import periodogram
 from scipy.fftpack import next_fast_len
 
-from yam.correlate import (_fill_array, _shift,
+from yam.correlate import (_fill_array, _downsample_and_shift,
                            correlate_traces, spectral_whitening,
                            time_norm)
 
@@ -166,42 +166,42 @@ class TestCase(unittest.TestCase):
 #        plt.legend()
 #        plt.show()
 
-    def test_phase_shift(self):
+    def test_shift(self):
         tr = read()[0]
         dt = tr.stats.delta
         t = tr.stats.starttime = UTC('2018-01-01T00:00:10.000000Z')
         tr2 = tr.copy()
-        _shift(tr2)
+        _downsample_and_shift(tr2)
         self.assertEqual(tr2, tr)
 
         tr2 = tr.copy()
         tr2.stats.starttime = t + 0.1 * dt
-        tr2 = _shift(tr2)
+        _downsample_and_shift(tr2)
         self.assertEqual(tr2.stats.starttime, t)
 
         tr2 = tr.copy()
         tr2.stats.starttime = t - 0.1 * dt
-        _shift(tr2)
+        _downsample_and_shift(tr2)
         self.assertEqual(tr2.stats.starttime, t)
 
         tr2 = tr.copy()
         tr2.stats.starttime = t - 0.49 * dt
-        _shift(tr2)
+        _downsample_and_shift(tr2)
         self.assertEqual(tr2.stats.starttime, t)
 
         tr2 = tr.copy()
         tr2.stats.starttime = t - 0.0001 * dt
-        _shift(tr2)
+        _downsample_and_shift(tr2)
         self.assertEqual(tr2.stats.starttime, t)
 
         # shift cumulatively by +1 sample
         tr2 = tr.copy()
         tr2.stats.starttime += 0.3 * dt
-        _shift(tr2)
+        _downsample_and_shift(tr2)
         tr2.stats.starttime += 0.3 * dt
-        _shift(tr2)
+        _downsample_and_shift(tr2)
         tr2.stats.starttime += 0.4 * dt
-        _shift(tr2)
+        _downsample_and_shift(tr2)
         self.assertEqual(tr2.stats.starttime, t)
         np.testing.assert_allclose(tr2.data[201:-200], tr.data[200:-201],
                                    rtol=1e-2, atol=1)
@@ -213,11 +213,11 @@ class TestCase(unittest.TestCase):
         # shift cumulatively by -1 sample
         tr2 = tr.copy()
         tr2.stats.starttime -= 0.3 * dt
-        _shift(tr2)
+        _downsample_and_shift(tr2)
         tr2.stats.starttime -= 0.3 * dt
-        _shift(tr2)
+        _downsample_and_shift(tr2)
         tr2.stats.starttime -= 0.4 * dt
-        _shift(tr2)
+        _downsample_and_shift(tr2)
         self.assertEqual(tr2.stats.starttime, t)
         np.testing.assert_allclose(tr2.data[200:-201], tr.data[201:-200],
                                    rtol=1e-2, atol=2)

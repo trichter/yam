@@ -248,22 +248,53 @@ def get_data(smeta, data, data_format, day, overlap=0, edge=0,
     return stream
 
 
-def _shift(trace, tolerance_shift=None):
-    dt = 1 / trace.stats.sampling_rate
+def _shift(trace, shift):
+    log.debug("interpolate trace %s with starttime %s to shift by %.6fs",
+              trace.id, trace.stats.starttime, shift)
+    nfft = next_fast_len(len(trace))
+    spec = rfft(trace.data, nfft)
+    freq = rfftfreq(nfft, trace.stats.delta)
+    spec *= np.exp(-2j * np.pi * freq * shift)
+    trace.data = irfft(spec)[:len(trace)]
+    trace.stats.starttime -= shift
+    return trace
+
+
+def _downsample_and_shift(trace, target_sr=None, tolerance_shift=None,
+                          **interpolate_kwargs):
+    sr = trace.stats.sampling_rate
+    if target_sr is None:
+        target_sr = sr
+    dt = 1 / target_sr
     shift = (1e-6 * trace.stats.starttime.microsecond) % dt
     if shift > 0.5 * dt:
         shift = shift - dt
     if tolerance_shift is None:
         tolerance_shift = np.finfo(float).eps
-    if abs(shift) > tolerance_shift:
-        log.debug("interpolate trace %s with starttime %s to shift by %.6fs",
-                  trace.id, trace.stats.starttime, shift)
-        nfft = next_fast_len(len(trace))
-        spec = rfft(trace.data, nfft)
-        freq = rfftfreq(nfft, dt)
-        spec *= np.exp(-2j * np.pi * freq * shift)
-        trace.data = irfft(spec)[:len(trace)]
-    trace.stats.starttime -= shift
+    must_shift = abs(shift) > tolerance_shift
+    if not must_shift:  # anyway correct starttime
+        trace.stats.starttime -= shift
+    if sr % target_sr == 0:
+        if sr != target_sr:
+            trace.decimate(int(sr // target_sr))
+        if must_shift:
+            _shift(trace, shift)
+    else:
+        # anti-aliasing filter
+        if sr / target_sr > 16:
+            msg = ('Automatic filter design is unstable for decimation'
+                   ' factors above 16. '
+                   'Manual decimation is necessary.')
+            raise ArithmeticError(msg)
+        trace.filter('lowpass_cheby_2', freq=0.5 * target_sr,
+                     maxorder=12)
+        if must_shift:
+            starttime = trace.stats.starttime - shift
+            if starttime < trace.stats.starttime:
+                starttime += dt
+        else:
+            starttime = None
+        trace.interpolate(target_sr, starttime=starttime, **interpolate_kwargs)
     return trace
 
 
@@ -307,21 +338,7 @@ def preprocess(stream, day=None, inventory=None,
     if downsample is None:
         downsample = min(tr.stats.sampling_rate for tr in stream)
     for tr in stream:
-        sr = tr.stats.sampling_rate
-        if downsample != sr:
-            if sr % downsample == 0:
-                tr.decimate(int(sr) // downsample)
-            else:
-                # anti-aliasing filter
-                if sr / downsample > 16:
-                    msg = ('Automatic filter design is unstable for decimation'
-                           ' factors above 16. '
-                           'Manual decimation is necessary.')
-                    raise ArithmeticError(msg)
-                tr.filter('lowpass_cheby_2', freq=0.5 * downsample,
-                          maxorder=12)
-                tr.interpolate(downsample, method='lanczos', a=10)
-        _shift(tr)
+        _downsample_and_shift(tr, downsample)
     if remove_response:
         stream.remove_response(inventory, **remove_response_options)
     for tr in stream:
