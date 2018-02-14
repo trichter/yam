@@ -227,7 +227,36 @@ class TestCase(unittest.TestCase):
         self.assertGreater(cc_max, 0.995)
 
     def test_downsample_and_shift(self):
-        pass
+        tr = read()[0]
+        t = tr.stats.starttime = UTC('2018-01-01T00:00:10.000000Z')
+        # decimate
+        tr2 = _downsample_and_shift(tr.copy(), 50.)
+        self.assertEqual(tr2.stats.sampling_rate, 50)
+        # interpolate
+        tr2 = _downsample_and_shift(tr.copy(), 40.)
+        self.assertEqual(tr2.stats.sampling_rate, 40)
+        # decimate and time shift
+        tr2 = tr.copy()
+        tr2.stats.starttime += 0.002
+        tr2 = _downsample_and_shift(tr2, 50.)
+        self.assertEqual(tr2.stats.sampling_rate, 50)
+        self.assertEqual(tr2.stats.starttime, t)
+        tr2 = tr.copy()
+        tr2.stats.starttime -= 0.002
+        tr2 = _downsample_and_shift(tr2, 50.)
+        self.assertEqual(tr2.stats.sampling_rate, 50)
+        self.assertEqual(tr2.stats.starttime, t)
+        # interpolate and time shift
+        tr2 = tr.copy()
+        tr2.stats.starttime += 0.002
+        tr2 = _downsample_and_shift(tr2, 40.)
+        self.assertEqual(tr2.stats.sampling_rate, 40)
+        self.assertEqual(tr2.stats.starttime - tr2.stats.delta, t)
+        tr2 = tr.copy()
+        tr2.stats.starttime -= 0.002
+        tr2 = _downsample_and_shift(tr2, 40.)
+        self.assertEqual(tr2.stats.sampling_rate, 40)
+        self.assertEqual(tr2.stats.starttime, t)
 
     def test_preprocess(self):
         pass
