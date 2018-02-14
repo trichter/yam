@@ -138,6 +138,7 @@ def spectral_whitening(data, sr=None, smooth=None, filter=None,
 
     :return: whitened data
     """
+    data = _fill_array(data, fill_value=0.)
     mask = np.ma.getmask(data)
     N = len(data)
     nfft = next_fast_len(N)
@@ -333,6 +334,7 @@ def preprocess(stream, day=None, inventory=None,
         remove_response_options = {}
     if isinstance(normalization, str):
         normalization = [normalization]
+    stream = stream.merge(1, interpolation_samples=10).split()
     for tr in stream:
         tr.data = tr.data.astype('float64')
     if downsample is None:
@@ -344,6 +346,9 @@ def preprocess(stream, day=None, inventory=None,
     for tr in stream:
         if filter is not None:
             _filter(tr, filter)
+    stream.merge()
+    for tr in stream:
+        tr.data = _fill_array(tr.data, fill_value=0.)
         for norm in normalization:
             if norm == 'spectral_whitening':
                 sr = tr.stats.sampling_rate
@@ -354,7 +359,6 @@ def preprocess(stream, day=None, inventory=None,
         if decimate:
             tr.decimate(decimate, no_filter=True)
     assert len({tr.stats.sampling_rate for tr in stream}) == 1
-    stream.merge(method=1, interpolation_samples=10)
     if day is not None:
         next_day = day + 24 * 3600
         stream.trim(day, next_day + overlap)
@@ -370,7 +374,7 @@ def correlate(io, day, outkey,
               component_combinations=('ZZ',),
               max_lag=100,
               keep_correlations=False,
-              stack='1day',
+              stack='1d',
               **preprocessing_kwargs):
     """
     Correlate data of one day
@@ -414,9 +418,13 @@ def correlate(io, day, outkey,
     if not keep_correlations and stack is None:
         raise ValueError('keep_correlation is False and stack is None')
     components = set(''.join(component_combinations))
+    if 'R' in components or 'T' in components:
+        load_components = components - {'R', 'T'} | {'N', 'E'}
+    else:
+        load_components = components
     # load data
     stream = obspy.Stream()
-    for smeta in _iter_station_meta(inventory, components):
+    for smeta in _iter_station_meta(inventory, load_components):
         stream2 = get_data(smeta, io['data'], io['data_format'], day,
                            overlap=overlap, edge=edge)
         if stream2:
@@ -428,7 +436,7 @@ def correlate(io, day, outkey,
                **preprocessing_kwargs)
     # start correlation
     next_day = day + 24 * 3600
-    stations = [tr.id[:-1] for tr in stream]
+    stations = sorted({tr.id[:-1] for tr in stream})
     for station1, station2 in itertools.combinations_with_replacement(
             stations, 2):
         if only_auto_correlation and station1 != station2:
@@ -451,12 +459,12 @@ def correlate(io, day, outkey,
         if 'R' in components or 'T' in components and station1 != station2:
             stream1 = stream1.copy()
             stream1b = stream1.copy().rotate('NE->RT', azi)
-            stream1.extend(stream1b.select(channel='R'))
-            stream1.extend(stream1b.select(channel='T'))
+            stream1.extend(stream1b.select(component='R'))
+            stream1.extend(stream1b.select(component='T'))
             stream2 = stream2.copy()
             stream2b = stream2.copy().rotate('NE->RT', azi)
-            stream2.extend(stream2b.select(channel='R'))
-            stream2.extend(stream2b.select(channel='T'))
+            stream2.extend(stream2b.select(component='R'))
+            stream2.extend(stream2b.select(component='T'))
         it_ = (itertools.product(stream1, stream2) if station1 != station2 else
                itertools.combinations_with_replacement(stream1, 2))
         for tr1, tr2 in it_:

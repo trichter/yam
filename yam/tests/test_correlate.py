@@ -2,12 +2,13 @@
 import unittest
 
 import numpy as np
-from obspy import read, UTCDateTime as UTC
+from obspy import read, read_inventory, UTCDateTime as UTC
 from obspy.signal.cross_correlation import correlate, xcorr_max
 from scipy.signal import periodogram
 from scipy.fftpack import next_fast_len
 
 from yam.correlate import (_fill_array, _downsample_and_shift,
+                           correlate as yam_correlate,
                            correlate_traces, spectral_whitening,
                            time_norm)
 
@@ -269,8 +270,45 @@ class TestCase(unittest.TestCase):
         self.assertGreater(abs(corr), 0.2)
         self.assertEqual(tr.id, 'RJOB.EHE.RJOB.EHN')
 
-    def test_corelate(self):
-        pass
+    def test_correlate(self):
+        stream = read()
+        day = UTC('2018-01-02')
+        for tr in stream:
+            tr.stats.starttime = day
+
+        # prepare mock objects for call to yam_correlate
+        def data1(starttime, endtime, **kwargs):
+            return stream.select(**kwargs).slice(starttime, endtime)
+        def data2(starttime, endtime, **kwargs):
+            return stream.select(**kwargs).slice(starttime, endtime)
+        from types import SimpleNamespace
+        results = []
+        q = SimpleNamespace()
+        def put(arg):
+            results.append(arg[0])
+        q.put = put
+        yam_correlate.q = q
+
+        io = {'data': data1, 'data_format': None,
+              'inventory': read_inventory(), 'stack': None}
+        yam_correlate(io, day, 'outkey')
+        io['data'] = data2
+        stream = stream.cutout(day + 100, day + 110)
+        yam_correlate(io, day, 'outkey')
+        yam_correlate(io, day, 'outkey', component_combinations=['ZR', 'RT'])
+        del yam_correlate.q
+
+        self.assertEqual(len(results), 4)
+        self.assertEqual(len(results[1]), 1)
+        self.assertEqual(len(results[2]), 1)
+        self.assertEqual(len(results[2]), 1)
+        self.assertEqual(len(results[3]), 1)
+        self.assertEqual(results[0][0].id, 'RJOB.EHZ.RJOB.EHZ')
+        self.assertEqual(results[1][0].id, 'RJOB.EHZ.RJOB.EHZ')
+        self.assertEqual(results[2][0].id, 'RJOB.EHZ.RJOB.EHR')
+        self.assertEqual(results[3][0].id, 'RJOB.EHR.RJOB.EHT')
+        np.testing.assert_allclose(xcorr_max(results[0][0].data), (0, 1.))
+        np.testing.assert_allclose(xcorr_max(results[1][0].data), (0, 1.))
 
 
 def suite():
