@@ -4,6 +4,7 @@ import itertools
 import logging
 
 import numpy as np
+from numpy.fft import rfft, irfft, rfftfreq
 import obspy
 from obspy.core import Stream
 from obspy.geodetics import gps2dist_azimuth
@@ -11,7 +12,6 @@ from obspy.signal.cross_correlation import correlate as obscorr
 from scipy.fftpack import fft, ifft, fftshift, ifftshift, next_fast_len
 from scipy.signal import freqz, iirfilter, hilbert
 
-from yam._from_msnoise import check_and_phase_shift
 from yam.util import _filter, IterTime, smooth as smooth_func, _time2sec
 import yam.stack
 
@@ -248,6 +248,25 @@ def get_data(smeta, data, data_format, day, overlap=0, edge=0,
     return stream
 
 
+def _shift(trace, tolerance_shift=None):
+    dt = 1 / trace.stats.sampling_rate
+    shift = (1e-6 * trace.stats.starttime.microsecond) % dt
+    if shift > 0.5 * dt:
+        shift = shift - dt
+    if tolerance_shift is None:
+        tolerance_shift = np.finfo(float).eps
+    if abs(shift) > tolerance_shift:
+        log.debug("interpolate trace %s with starttime %s to shift by %.6fs",
+                  trace.id, trace.stats.starttime, shift)
+        nfft = next_fast_len(len(trace))
+        spec = rfft(trace.data, nfft)
+        freq = rfftfreq(nfft, dt)
+        spec *= np.exp(-2j * np.pi * freq * shift)
+        trace.data = irfft(spec)[:len(trace)]
+    trace.stats.starttime -= shift
+    return trace
+
+
 def preprocess(stream, day=None, inventory=None,
                overlap=0,
                remove_response=False,
@@ -302,7 +321,7 @@ def preprocess(stream, day=None, inventory=None,
                 tr.filter('lowpass_cheby_2', freq=0.5 * downsample,
                           maxorder=12)
                 tr.interpolate(downsample, method='lanczos', a=10)
-        check_and_phase_shift(tr)
+        _shift(tr)
     if remove_response:
         stream.remove_response(inventory, **remove_response_options)
     for tr in stream:
