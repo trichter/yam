@@ -226,6 +226,9 @@ class TestCase(unittest.TestCase):
         self.assertEqual(shift, -1)
         self.assertGreater(cc_max, 0.995)
 
+    def test_downsample_and_shift(self):
+        pass
+
     def test_preprocess(self):
         pass
 
@@ -236,6 +239,9 @@ class TestCase(unittest.TestCase):
         self.assertLess(abs(shift / len(tr)), 0.01)
         self.assertGreater(abs(corr), 0.2)
         self.assertEqual(tr.id, 'RJOB.EHE.RJOB.EHN')
+
+    def test_corelate(self):
+        pass
 
 
 def suite():
