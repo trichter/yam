@@ -435,6 +435,7 @@ def correlate(io, day, outkey,
                **preprocessing_kwargs)
     # start correlation
     next_day = day + 24 * 3600
+    stream.sort()
     stations = sorted({tr.id[:-1] for tr in stream})
     for station1, station2 in itertools.combinations_with_replacement(
             stations, 2):
