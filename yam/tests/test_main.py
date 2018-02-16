@@ -185,7 +185,8 @@ def get_data(starttime, endtime, **smeta):
         with self.assertWarnsRegex(UserWarning, 'only top level keys'):
             self.out('remove cauto/CX.PATCX-CX.PATCX')
         self.out('remove cauto')
-        self.out('correlate auto --njobs 1')  # takes long
+        self.out('correlate auto --parallel-inner-loop')  # takes long
+        self.maxDiff = None
         cauto_info_seq = self.out('info cauto')
         self.assertEqual(cauto_info, cauto_info_seq)
 

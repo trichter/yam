@@ -357,6 +357,12 @@ def run_cmdline(args=None):
         msg = ('Number of cores to use (default: all), '
                'only applies to some commands')
         p2.add_argument('-n', '--njobs', default=None, type=int, help=msg)
+    msg = ('Run inner loops parallel instead of outer loop '
+           '(preproccessing of different stations and correlation of different '
+           'pairs versus processing of different days). '
+           'Useful for a datset with many stations.')
+    p_correlate.add_argument('--parallel-inner-loop', action='store_true',
+                             help=msg)
     msg = 'type of plot (a default is chosen for the given key)'
     choices = ('vs_dist', 'wiggle')
     p_plot.add_argument('--plottype', help=msg, choices=choices)

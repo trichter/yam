@@ -1,7 +1,9 @@
 # Copyright 2017-2018 Tom Eulenfeld, GPLv3
 """Preprocessing and correlation"""
+from functools import partial
 import itertools
 import logging
+import multiprocessing
 
 import numpy as np
 from numpy.fft import rfft, irfft, rfftfreq
@@ -17,6 +19,17 @@ import yam.stack
 
 
 log = logging.getLogger('yam.correlate')
+
+
+def start_parallel_jobs_inner_loop(tasks, do_work, njobs=1):
+    if njobs == 1:
+        results = [do_work(task) for task in tasks]
+    else:
+        pool = multiprocessing.Pool(njobs)
+        results = pool.map(do_work, tasks)
+        pool.close()
+        pool.join()
+    return results
 
 
 def _fill_array(data, mask=None, fill_value=None):
@@ -155,26 +168,6 @@ def spectral_whitening(data, sr=None, smooth=None, filter=None,
     return _fill_array(ret, mask=mask, fill_value=0.)
 
 
-def correlate_traces(tr1, tr2, maxshift=3600):
-    """
-    Return trace of cross-correlation of two input traces
-
-    :param tr1,tr2: two |Trace| objects
-    :param maxsift: maximal shift in correlation in seconds
-    """
-    n1, s1, l1, c1 = tr1.id.split('.')
-    n2, s2, l2, c2 = tr2.id.split('.')
-    sr = tr1.stats.sampling_rate
-    xdata = obscorr(tr1.data, tr2.data, int(round(maxshift * sr)))
-    header = {'network': s1, 'station': c1, 'location': s2, 'channel': c2,
-              'network1': n1, 'station1': s1, 'location1': l1, 'channel1': c1,
-              'network2': n2, 'station2': s2, 'location2': l2, 'channel2': c2,
-              'starttime': tr1.stats.starttime,
-              'sampling_rate': sr,
-              }
-    return obspy.Trace(data=xdata, header=header)
-
-
 def __get_stations(inventory):
     channels = inventory.get_contents()['channels']
     stations = sorted({ch[:-1] + '?': ch[-1] for ch in channels})
@@ -261,7 +254,7 @@ def _shift(trace, shift):
 
 
 def _downsample_and_shift(trace, target_sr=None, tolerance_shift=None,
-                          **interpolate_kwargs):
+                          **interpolate_options):
     sr = trace.stats.sampling_rate
     if target_sr is None:
         target_sr = sr
@@ -297,8 +290,43 @@ def _downsample_and_shift(trace, target_sr=None, tolerance_shift=None,
             log.debug(msg, trace.id, trace.stats.starttime, shift)
         else:
             starttime = None
-        trace.interpolate(target_sr, starttime=starttime, **interpolate_kwargs)
+        trace.interpolate(target_sr, starttime=starttime,
+                          **interpolate_options)
     return trace
+
+
+def _prep1(target_sr, tolerance_shift, interpolate_options,
+           remove_response, inventory, remove_response_options, filter,
+           tr):
+    tr.data = tr.data.astype('float64')
+    _downsample_and_shift(tr, target_sr=target_sr,
+                          tolerance_shift=tolerance_shift,
+                          interpolate_options=interpolate_options)
+    if remove_response:
+        tr.remove_response(inventory, **remove_response_options)
+    if filter is not None:
+        _filter(tr, filter)
+    return tr
+
+
+def _prep2(normalization, time_norm_options, spectral_whitening_options,
+           decimate,
+           tr):
+    tr.data = _fill_array(tr.data, fill_value=0.)
+    for norm in normalization:
+        if norm == 'spectral_whitening':
+            sr = tr.stats.sampling_rate
+            tr.data = spectral_whitening(tr.data, sr=sr,
+                                         **spectral_whitening_options)
+        else:
+            tr.data = time_norm(tr.data, norm, **time_norm_options)
+    if decimate:
+        mask = np.ma.getmask(tr.data)
+        tr.decimate(decimate, no_filter=True)
+        if mask is not np.ma.nomask:
+            tr.data = np.ma.MaskedArray(tr.data, mask[::decimate],
+                                        fill_value=0)
+    return tr
 
 
 def preprocess(stream, day=None, inventory=None,
@@ -309,7 +337,9 @@ def preprocess(stream, day=None, inventory=None,
                normalization=(),
                time_norm_options=None,
                spectral_whitening_options=None,
-               downsample=None, decimate=None):
+               downsample=None, tolerance_shift=None, interpolate_options=None,
+               decimate=None,
+               njobs=1):
     """
     Preprocess stream of 1 day
 
@@ -334,45 +364,84 @@ def preprocess(stream, day=None, inventory=None,
         spectral_whitening_options = {}
     if remove_response_options is None:
         remove_response_options = {}
+    if interpolate_options is None:
+        interpolate_options = {}
     if isinstance(normalization, str):
         normalization = [normalization]
     stream.merge(1, interpolation_samples=10)
     stream.traces = stream.split().traces
     # discard traces with less than 10 samples
     stream.traces = [tr for tr in stream if len(tr) >= 10]
-    for tr in stream:
-        tr.data = tr.data.astype('float64')
     if downsample is None:
         downsample = min(tr.stats.sampling_rate for tr in stream)
-    for tr in stream:
-        _downsample_and_shift(tr, downsample)
-    if remove_response:
-        stream.remove_response(inventory, **remove_response_options)
-    for tr in stream:
-        if filter is not None:
-            _filter(tr, filter)
+    do_work = partial(_prep1, downsample, tolerance_shift, interpolate_options,
+                      remove_response, inventory, remove_response_options,
+                      filter)
+    stream.traces = start_parallel_jobs_inner_loop(stream, do_work, njobs)
     stream.merge()
-    for tr in stream:
-        tr.data = _fill_array(tr.data, fill_value=0.)
-        for norm in normalization:
-            if norm == 'spectral_whitening':
-                sr = tr.stats.sampling_rate
-                tr.data = spectral_whitening(tr.data, sr=sr,
-                                             **spectral_whitening_options)
-            else:
-                tr.data = time_norm(tr.data, norm, **time_norm_options)
-        if decimate:
-            mask = np.ma.getmask(tr.data)
-            tr.decimate(decimate, no_filter=True)
-            if mask is not np.ma.nomask:
-                tr.data = np.ma.MaskedArray(tr.data, mask[::decimate],
-                                            fill_value=0)
+    do_work = partial(_prep2, normalization, time_norm_options,
+                      spectral_whitening_options, decimate)
+    stream.traces = start_parallel_jobs_inner_loop(stream, do_work, njobs)
     assert len({tr.stats.sampling_rate for tr in stream}) == 1
     if day is not None:
         next_day = day + 24 * 3600
         stream.trim(day, next_day + overlap)
     stream.sort()
     return stream
+
+
+def correlate_traces(tr1, tr2, maxshift=3600):
+    """
+    Return trace of cross-correlation of two input traces
+
+    :param tr1,tr2: two |Trace| objects
+    :param maxsift: maximal shift in correlation in seconds
+    """
+    n1, s1, l1, c1 = tr1.id.split('.')
+    n2, s2, l2, c2 = tr2.id.split('.')
+    sr = tr1.stats.sampling_rate
+    xdata = obscorr(tr1.data, tr2.data, int(round(maxshift * sr)))
+    header = {'network': s1, 'station': c1, 'location': s2, 'channel': c2,
+              'network1': n1, 'station1': s1, 'location1': l1, 'channel1': c1,
+              'network2': n2, 'station2': s2, 'location2': l2, 'channel2': c2,
+              'starttime': tr1.stats.starttime,
+              'sampling_rate': sr,
+              }
+    return obspy.Trace(data=xdata, header=header)
+
+
+def _slide_and_correlate_traces(day, next_day, length, overlap, discard,
+                                max_lag, outkey,
+                                task):
+    tr1, tr2, dist, azi, baz = task
+    xstream = obspy.Stream()
+    for t1 in IterTime(day, next_day - length + overlap,
+                       dt=length - overlap):
+        sub = obspy.Stream([tr1, tr2]).slice(t1, t1 + length)
+        if len(sub) < 2:
+            continue
+        st = [tr.stats.starttime for tr in sub]
+        et = [tr.stats.endtime for tr in sub]
+        if max(st) > min(et):
+            continue
+        sub.trim(max(st), min(et))
+        if discard and any(
+                (tr.data.count() if hasattr(tr.data, 'count')
+                 else len(tr))
+                / tr.stats.sampling_rate / length < discard
+                for tr in sub):
+            continue
+        for tr in sub:
+            _fill_array(tr.data, fill_value=0.)
+            tr.data = np.ma.getdata(tr.data)
+        xtr = correlate_traces(sub[0], sub[1], max_lag)
+        xtr.stats.starttime = t1
+        xtr.stats.key = outkey
+        xtr.stats.dist = dist
+        xtr.stats.azi = azi
+        xtr.stats.baz = baz
+        xstream += xtr
+    return xstream
 
 
 def correlate(io, day, outkey,
@@ -385,6 +454,7 @@ def correlate(io, day, outkey,
               max_lag=100,
               keep_correlations=False,
               stack='1d',
+              njobs=1,
               **preprocessing_kwargs):
     """
     Correlate data of one day
@@ -451,12 +521,12 @@ def correlate(io, day, outkey,
     if len(stream) == 0:
         log.warning('empty stream for day %s', str(day)[:10])
         return
-    preprocess(stream, day, inventory, overlap=overlap,
+    preprocess(stream, day, inventory, overlap=overlap, njobs=njobs,
                **preprocessing_kwargs)
     # start correlation
     next_day = day + 24 * 3600
     stations = sorted({tr.id[:-1] for tr in stream})
-    xstream = obspy.Stream()
+    tasks = []
     for station1, station2 in itertools.combinations_with_replacement(
             stations, 2):
         if only_auto_correlation and station1 != station2:
@@ -493,32 +563,12 @@ def correlate(io, day, outkey,
                     comps not in component_combinations and
                     comps[::-1] not in component_combinations):
                 continue
-            for t1 in IterTime(day, next_day - length + overlap,
-                               dt=length - overlap):
-                sub = obspy.Stream([tr1, tr2]).slice(t1, t1 + length)
-                if len(sub) < 2:
-                    continue
-                st = [tr.stats.starttime for tr in sub]
-                et = [tr.stats.endtime for tr in sub]
-                if max(st) > min(et):
-                    continue
-                sub.trim(max(st), min(et))
-                if discard and any(
-                        (tr.data.count() if hasattr(tr.data, 'count')
-                         else len(tr))
-                        / tr.stats.sampling_rate / length < discard
-                        for tr in sub):
-                    continue
-                for tr in sub:
-                    _fill_array(tr.data, fill_value=0.)
-                    tr.data = np.ma.getdata(tr.data)
-                xtr = correlate_traces(sub[0], sub[1], max_lag)
-                xtr.stats.starttime = t1
-                xtr.stats.key = outkey
-                xtr.stats.dist = dist
-                xtr.stats.azi = azi
-                xtr.stats.baz = baz
-                xstream += xtr
+            tasks.append((tr1, tr2, dist, azi, baz))
+    do_work = partial(_slide_and_correlate_traces, day, next_day, length,
+                      overlap, discard, max_lag, outkey)
+    streams = start_parallel_jobs_inner_loop(tasks, do_work, njobs)
+    xstream = Stream()
+    xstream.traces = [tr for s_ in streams for tr in s_]
     # write and/or stack stream
     if len(xstream) > 0:
         if keep_correlations:

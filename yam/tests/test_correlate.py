@@ -1,5 +1,6 @@
 # Copyright 2017-2018 Tom Eulenfeld, GPLv3
 import unittest
+import sys
 
 import numpy as np
 from obspy import read, read_inventory, UTCDateTime as UTC
@@ -14,6 +15,10 @@ from yam.correlate import (_fill_array, _downsample_and_shift,
 
 
 class TestCase(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        args = sys.argv[1:]
+        cls.njobs = args[args.index('-n') + 1] if '-n'  in args else None
 
     def test_fill_array(self):
         data = np.arange(5, dtype=float)
@@ -347,7 +352,8 @@ class TestCase(unittest.TestCase):
         res = []
         yam_correlate(io, day, 'outkey',
                       station_combinations=('GR.FUR-GR.WET', 'RJOB-RJOB'),
-                      component_combinations=('ZZ', 'NE', 'NR'))
+                      component_combinations=('ZZ', 'NE', 'NR'),
+                      njobs=self.njobs)
         self.assertEqual(len(res[0]), 7)
         ids = ['RJOB.EHE.RJOB.EHN', 'RJOB.EHZ.RJOB.EHZ',
                'FUR.BHE.WET.BHN', 'FUR.BHN.WET.BHE',
@@ -362,7 +368,8 @@ class TestCase(unittest.TestCase):
         res = []
         yam_correlate(io, day, 'outkey', only_auto_correlation=True,
                       station_combinations=('GR.FUR-GR.WET', 'RJOB-RJOB'),
-                      component_combinations=['ZN', 'RT'])
+                      component_combinations=['ZN', 'RT'], njobs=self.njobs,
+                      remove_response=True)
         self.assertEqual(len(res[0]), 1)
         tr = res[0][0]
         self.assertEqual(tr.stats.station[-1], 'N')

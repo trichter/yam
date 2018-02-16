@@ -81,7 +81,7 @@ def _write_stretch(queue):
             break
 
 
-def start_parallel_jobs(tasks, do_work, write, njobs=None):
+def start_parallel_jobs(tasks, do_work, write, njobs=1):
     queue = multiprocessing.Queue()
     proc = multiprocessing.Process(target=write, args=(queue, ))
     proc.start()
@@ -148,6 +148,7 @@ def start_correlate(io,
                     filter_inventory=None,
                     startdate='1990-01-01', enddate='2020-01-01',
                     njobs=None,
+                    parallel_inner_loop=False,
                     keep_correlations=False,
                     stack='1d',
                     **kwargs):
@@ -188,6 +189,9 @@ def start_correlate(io,
             done_tasks = [t for t in done_tasks if t in done_tasks2]
     tasks = _todo_tasks(tasks, done_tasks)
     kwargs.update({'keep_correlations': keep_correlations, 'stack': stack})
+    if parallel_inner_loop:
+        kwargs['njobs'] = njobs
+        njobs = 1
     do_work = functools.partial(correlate, io, **kwargs)
     start_parallel_jobs(tasks, do_work, _write_stream, njobs=njobs)
     log.info('finished preprocessing and correlation')

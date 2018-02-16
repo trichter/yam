@@ -3,6 +3,7 @@ dev:
   * add debug option (--pdb)
   * add exhaustive online documentation
   * add possibility to correlate "R" and "T" rotated components (experimental)
+  * add --parallel-inner-loop feasible for correlating many stations
   * downsample now performed before preprocessing
   * add decimate option (downsampling after preprocessing)
   * reduce run time of tests
