@@ -456,6 +456,7 @@ def correlate(io, day, outkey,
     # start correlation
     next_day = day + 24 * 3600
     stations = sorted({tr.id[:-1] for tr in stream})
+    xstream = obspy.Stream()
     for station1, station2 in itertools.combinations_with_replacement(
             stations, 2):
         if only_auto_correlation and station1 != station2:
@@ -492,7 +493,6 @@ def correlate(io, day, outkey,
                     comps not in component_combinations and
                     comps[::-1] not in component_combinations):
                 continue
-            xstream = obspy.Stream()
             for t1 in IterTime(day, next_day - length + overlap,
                                dt=length - overlap):
                 sub = obspy.Stream([tr1, tr2]).slice(t1, t1 + length)
@@ -519,13 +519,13 @@ def correlate(io, day, outkey,
                 xtr.stats.azi = azi
                 xtr.stats.baz = baz
                 xstream += xtr
-            # write and/or stack stream
-            if len(xstream) > 0:
-                if keep_correlations:
-                    correlate.q.put((xstream, io['corr']))
-                if stack:
-                    xstack = yam.stack.stack(xstream, stack)
-                    correlate.q.put((xstack, io['stack']))
+    # write and/or stack stream
+    if len(xstream) > 0:
+        if keep_correlations:
+            correlate.q.put((xstream, io['corr']))
+        if stack:
+            xstack = yam.stack.stack(xstream, stack)
+            correlate.q.put((xstack, io['stack']))
 
 #    Loop before introduction of rotation
 #    for tr1, tr2 in itertools.combinations_with_replacement(stream, 2):
