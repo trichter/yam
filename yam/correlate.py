@@ -372,7 +372,7 @@ def preprocess(stream, day=None, inventory=None,
         time_norm_options = {}
     if spectral_whitening_options is None:
         spectral_whitening_options = {}
-    spectral_whitening_options.set_default('filter', filter)
+    spectral_whitening_options.setdefault('filter', filter)
     if remove_response_options is None:
         remove_response_options = {}
     if interpolate_options is None:
@@ -390,7 +390,10 @@ def preprocess(stream, day=None, inventory=None,
                       remove_response, inventory, remove_response_options,
                       filter)
     stream.traces = start_parallel_jobs_inner_loop(stream, do_work, njobs)
+    len1 = len(stream)
     stream.merge()
+    if len(stream) < len1:
+        log.debug('detected gaps in data')
     do_work = partial(_prep2, normalization, time_norm_options,
                       spectral_whitening_options, decimate)
     stream.traces = start_parallel_jobs_inner_loop(stream, do_work, njobs)
@@ -435,15 +438,19 @@ def _slide_and_correlate_traces(day, next_day, length, overlap, discard,
             continue
         st = [tr.stats.starttime for tr in sub]
         et = [tr.stats.endtime for tr in sub]
-        if max(st) > min(et):
+        if max(st) > min(et):  # this should not happen
             continue
         sub.trim(max(st), min(et))
-        if discard and any(
-                (tr.data.count() if hasattr(tr.data, 'count')
-                 else len(tr))
-                / tr.stats.sampling_rate / length < discard
-                for tr in sub):
-            continue
+        if discard:
+            avail = min((tr.data.count() if hasattr(tr.data, 'count')
+                         else len(tr)) / tr.stats.sampling_rate / length
+                        for tr in sub)
+            print(avail)
+            if avail < discard:
+                msg = ('discard trace combination %s-%s for time %s '
+                       '(availability %f.1\% < %f.1\% desired)')
+                log.debug(msg, sub[0].id, sub[1].id, max(st), avail, discard)
+                continue
         for tr in sub:
             _fill_array(tr.data, fill_value=0.)
             tr.data = np.ma.getdata(tr.data)
@@ -511,7 +518,9 @@ def correlate(io, day, outkey,
     length = _time2sec(length)
     overlap = _time2sec(overlap)
     if not keep_correlations and stack is None:
-        raise ValueError('keep_correlation is False and stack is None')
+        msg = ('keep_correlation is False and stack is None -> correlations '
+               ' would not be saved')
+        raise ValueError(msg)
     components = set(''.join(component_combinations))
     if 'R' in components or 'T' in components:
         load_components = components - {'R', 'T'} | {'N', 'E'}
