@@ -335,36 +335,35 @@ class TestCase(unittest.TestCase):
         io = {'data': data, 'data_format': None,
               'inventory': read_inventory(), 'stack': None}
         yam_correlate(io, day, 'outkey')
-        self.assertEqual(len(res), 6)
+        self.assertEqual(len(res), 1)
+        self.assertEqual(len(res[0]), 6)
         # by default only 'ZZ' combinations
-        for s_ in res:
-            for tr in s_:
-                self.assertEqual(tr.stats.station[-1], 'Z')
-                self.assertEqual(tr.stats.channel[-1], 'Z')
-                if len(set(tr.id.split('.'))) == 2:  # autocorr
-                    np.testing.assert_allclose(xcorr_max(tr.data), (0, 1.))
+        for tr in res[0]:
+            self.assertEqual(tr.stats.station[-1], 'Z')
+            self.assertEqual(tr.stats.channel[-1], 'Z')
+            if len(set(tr.id.split('.'))) == 2:  # autocorr
+                np.testing.assert_allclose(xcorr_max(tr.data), (0, 1.))
 
         res = []
         yam_correlate(io, day, 'outkey',
                       station_combinations=('GR.FUR-GR.WET', 'RJOB-RJOB'),
                       component_combinations=('ZZ', 'NE', 'NR'))
-        self.assertEqual(len(res), 7)
+        self.assertEqual(len(res[0]), 7)
         ids = ['RJOB.EHE.RJOB.EHN', 'RJOB.EHZ.RJOB.EHZ',
                'FUR.BHE.WET.BHN', 'FUR.BHN.WET.BHE',
                'FUR.BHR.WET.BHN', 'FUR.BHN.WET.BHR',
                'FUR.BHZ.WET.BHZ']
-        for s_ in res:
-            for tr in s_:
-                self.assertIn(tr.id, ids)
-                if len(set(tr.id.split('.'))) == 2:  # autocorr
-                    np.testing.assert_allclose(xcorr_max(tr.data), (0, 1.))
+        for tr in res[0]:
+            self.assertIn(tr.id, ids)
+            if len(set(tr.id.split('.'))) == 2:  # autocorr
+                np.testing.assert_allclose(xcorr_max(tr.data), (0, 1.))
 
 
         res = []
         yam_correlate(io, day, 'outkey', only_auto_correlation=True,
                       station_combinations=('GR.FUR-GR.WET', 'RJOB-RJOB'),
                       component_combinations=['ZN', 'RT'])
-        self.assertEqual(len(res), 1)
+        self.assertEqual(len(res[0]), 1)
         tr = res[0][0]
         self.assertEqual(tr.stats.station[-1], 'N')
         self.assertEqual(tr.stats.channel[-1], 'Z')
