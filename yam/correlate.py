@@ -248,8 +248,9 @@ def get_data(smeta, data, data_format, day, overlap=0, edge=0,
 
 
 def _shift(trace, shift):
-    log.debug("interpolate trace %s with starttime %s to shift by %.6fs",
-              trace.id, trace.stats.starttime, shift)
+    msg = ('interpolate trace %s with starttime %s to shift by %.6fs '
+           '(Fourier method)')
+    log.debug(msg, trace.id, trace.stats.starttime, shift)
     nfft = next_fast_len(len(trace))
     spec = rfft(trace.data, nfft)
     freq = rfftfreq(nfft, trace.stats.delta)
@@ -291,6 +292,9 @@ def _downsample_and_shift(trace, target_sr=None, tolerance_shift=None,
             starttime = trace.stats.starttime - shift
             if starttime < trace.stats.starttime:
                 starttime += dt
+            msg = ('interpolate trace %s with starttime %s to downsample and '
+                   'shift by %.6fs (Stream.interpolate() method)')
+            log.debug(msg, trace.id, trace.stats.starttime, shift)
         else:
             starttime = None
         trace.interpolate(target_sr, starttime=starttime, **interpolate_kwargs)
