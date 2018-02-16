@@ -18,7 +18,7 @@ class TestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         args = sys.argv[1:]
-        cls.njobs = args[args.index('-n') + 1] if '-n'  in args else None
+        cls.njobs = int(args[args.index('-n') + 1]) if '-n'  in args else None
 
     def test_fill_array(self):
         data = np.arange(5, dtype=float)
