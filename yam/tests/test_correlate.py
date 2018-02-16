@@ -9,7 +9,7 @@ from scipy.fftpack import next_fast_len
 
 from yam.correlate import (_fill_array, _downsample_and_shift,
                            correlate as yam_correlate,
-                           correlate_traces, spectral_whitening,
+                           correlate_traces, preprocess, spectral_whitening,
                            time_norm)
 
 
@@ -260,7 +260,39 @@ class TestCase(unittest.TestCase):
         self.assertEqual(tr2.stats.starttime, t)
 
     def test_preprocess(self):
-        pass
+        stream = read()
+        day = UTC('2018-01-02')
+        for tr in stream:
+            tr.stats.starttime = day
+        tr = stream[1]
+        tr.id = 'GR.FUR..BH' + tr.stats.channel[-1]
+        tr.stats.sampling_rate = 80.
+        tr = stream[2]
+        tr.id = 'GR.WET..BH' + tr.stats.channel[-1]
+        tr.stats.sampling_rate = 50.
+        stream = stream.cutout(day + 0.01, day + 10)
+        stream = stream.cutout(day + 14, day + 16.05)
+        norm = ('clip', 'spectral_whitening', 'mute_envelope', '1bit')
+        # see https://docs.scipy.org/doc/numpy-1.13.0/release.html#
+        # assigning-to-slices-views-of-maskedarray
+        ignore_msg = r'setting an item on a masked array which has a shared'
+        with np.warnings.catch_warnings():
+            np.warnings.filterwarnings('ignore', ignore_msg)
+            preprocess(stream, day=day, inventory=read_inventory(),
+                       remove_response=True,
+                       filter=None,
+                       normalization=norm,
+                       time_norm_options=None,
+                       spectral_whitening_options=None,
+                       decimate=5)
+        for tr in stream:
+            self.assertEqual(tr.stats.sampling_rate, 10)
+        for tr in stream:
+            self.assertEqual(set(tr.data._data), {-1, 0, 1})
+            mask = np.ma.getmask(tr.data)
+            np.testing.assert_equal(tr.data[mask]._data, 0)
+            self.assertGreater(np.count_nonzero(mask), 0)
+        self.assertEqual(len(stream), 3)
 
     def test_correlate_traces(self):
         stream = read().sort()
@@ -272,43 +304,78 @@ class TestCase(unittest.TestCase):
 
     def test_correlate(self):
         stream = read()
+        stream2 = stream.copy()
+        stream3 = stream.copy()
+        for tr in stream2:
+            tr.id = 'GR.FUR..BH' + tr.stats.channel[-1]
+            tr.stats.sampling_rate = 80.
+        for tr in stream3:
+            tr.id = 'GR.WET..BH' + tr.stats.channel[-1]
+            tr.stats.sampling_rate = 50.
+        stream = stream + stream2 + stream3
         day = UTC('2018-01-02')
         for tr in stream:
             tr.stats.starttime = day
+        # create some gaps
+        stream = stream.cutout(day + 0.01, day + 10)
+        stream = stream.cutout(day + 14, day + 16.05)
 
         # prepare mock objects for call to yam_correlate
-        def data1(starttime, endtime, **kwargs):
-            return stream.select(**kwargs).slice(starttime, endtime)
-        def data2(starttime, endtime, **kwargs):
+        def data(starttime, endtime, **kwargs):
             return stream.select(**kwargs).slice(starttime, endtime)
         from types import SimpleNamespace
-        results = []
+        res = []
         q = SimpleNamespace()
+
         def put(arg):
-            results.append(arg[0])
+            res.append(arg[0])
         q.put = put
         yam_correlate.q = q
 
-        io = {'data': data1, 'data_format': None,
+        io = {'data': data, 'data_format': None,
               'inventory': read_inventory(), 'stack': None}
         yam_correlate(io, day, 'outkey')
-        io['data'] = data2
-        stream = stream.cutout(day + 100, day + 110)
-        yam_correlate(io, day, 'outkey')
-        yam_correlate(io, day, 'outkey', component_combinations=['ZR', 'RT'])
-        del yam_correlate.q
+        self.assertEqual(len(res), 6)
+        # by default only 'ZZ' combinations
+        for s_ in res:
+            for tr in s_:
+                self.assertEqual(tr.stats.station[-1], 'Z')
+                self.assertEqual(tr.stats.channel[-1], 'Z')
+                if len(set(tr.id.split('.'))) == 2:  # autocorr
+                    np.testing.assert_allclose(xcorr_max(tr.data), (0, 1.))
 
-        self.assertEqual(len(results), 4)
-        self.assertEqual(len(results[1]), 1)
-        self.assertEqual(len(results[2]), 1)
-        self.assertEqual(len(results[2]), 1)
-        self.assertEqual(len(results[3]), 1)
-        self.assertEqual(results[0][0].id, 'RJOB.EHZ.RJOB.EHZ')
-        self.assertEqual(results[1][0].id, 'RJOB.EHZ.RJOB.EHZ')
-        self.assertEqual(results[2][0].id, 'RJOB.EHZ.RJOB.EHR')
-        self.assertEqual(results[3][0].id, 'RJOB.EHR.RJOB.EHT')
-        np.testing.assert_allclose(xcorr_max(results[0][0].data), (0, 1.))
-        np.testing.assert_allclose(xcorr_max(results[1][0].data), (0, 1.))
+        res = []
+        yam_correlate(io, day, 'outkey',
+                      station_combinations=('GR.FUR-GR.WET', 'RJOB-RJOB'),
+                      component_combinations=('ZZ', 'NE', 'NR'))
+        self.assertEqual(len(res), 7)
+        ids = ['RJOB.EHE.RJOB.EHN', 'RJOB.EHZ.RJOB.EHZ',
+               'FUR.BHE.WET.BHN', 'FUR.BHN.WET.BHE',
+               'FUR.BHR.WET.BHN', 'FUR.BHN.WET.BHR',
+               'FUR.BHZ.WET.BHZ']
+        for s_ in res:
+            for tr in s_:
+                self.assertIn(tr.id, ids)
+                if len(set(tr.id.split('.'))) == 2:  # autocorr
+                    np.testing.assert_allclose(xcorr_max(tr.data), (0, 1.))
+
+
+        res = []
+        yam_correlate(io, day, 'outkey', only_auto_correlation=True,
+                      station_combinations=('GR.FUR-GR.WET', 'RJOB-RJOB'),
+                      component_combinations=['ZN', 'RT'])
+        self.assertEqual(len(res), 1)
+        tr = res[0][0]
+        self.assertEqual(tr.stats.station[-1], 'N')
+        self.assertEqual(tr.stats.channel[-1], 'Z')
+
+        res = []
+        stream.traces = [tr for tr in stream if tr.stats.channel[-1] != 'N']
+        yam_correlate(io, day, 'outkey',
+                      station_combinations=('GR.FUR-GR.WET', 'RJOB-RJOB'),
+                      component_combinations=('NT', 'NR'))
+        self.assertEqual(len(res), 0)
+        del yam_correlate.q
 
 
 def suite():

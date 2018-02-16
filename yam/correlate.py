@@ -48,8 +48,7 @@ def time_norm(data, method, clip_factor=1, clip_set_zero=False,
         mute_envelope: calculate envelope and set data to zero where envelope
         is larger than specified
     :param float clip_factor: multiply std with this value before cliping
-    :param bool clip_mask: instead of clipping, set the values to zero and mask
-        them
+    :param bool clip_mask: instead of clipping, set the values to zero
     :param int mute_parts: mean of the envelope is calculated by dividing the
         envelope into several parts, the mean calculated in each part and
         the median of this averages defines the mean envelope
@@ -333,7 +332,10 @@ def preprocess(stream, day=None, inventory=None,
         remove_response_options = {}
     if isinstance(normalization, str):
         normalization = [normalization]
-    stream = stream.merge(1, interpolation_samples=10).split()
+    stream.merge(1, interpolation_samples=10)
+    stream.traces = stream.split().traces
+    # discard traces with less than 10 samples
+    stream.traces = [tr for tr in stream if len(tr) >= 10]
     for tr in stream:
         tr.data = tr.data.astype('float64')
     if downsample is None:
@@ -356,12 +358,17 @@ def preprocess(stream, day=None, inventory=None,
             else:
                 tr.data = time_norm(tr.data, norm, **time_norm_options)
         if decimate:
+            mask = np.ma.getmask(tr.data)
             tr.decimate(decimate, no_filter=True)
+            if mask is not np.ma.nomask:
+                tr.data = np.ma.MaskedArray(tr.data, mask[::decimate],
+                                            fill_value=0)
     assert len({tr.stats.sampling_rate for tr in stream}) == 1
     if day is not None:
         next_day = day + 24 * 3600
         stream.trim(day, next_day + overlap)
     stream.sort()
+    return stream
 
 
 def correlate(io, day, outkey,
@@ -435,7 +442,6 @@ def correlate(io, day, outkey,
                **preprocessing_kwargs)
     # start correlation
     next_day = day + 24 * 3600
-    stream.sort()
     stations = sorted({tr.id[:-1] for tr in stream})
     for station1, station2 in itertools.combinations_with_replacement(
             stations, 2):
@@ -456,7 +462,7 @@ def correlate(io, day, outkey,
         args = (c1['latitude'], c1['longitude'],
                 c2['latitude'], c2['longitude'])
         dist, azi, baz = gps2dist_azimuth(*args)
-        if 'R' in components or 'T' in components and station1 != station2:
+        if ('R' in components or 'T' in components) and station1 != station2:
             stream1 = stream1.copy()
             stream1b = stream1.copy().rotate('NE->RT', azi)
             stream1.extend(stream1b.select(component='R'))
