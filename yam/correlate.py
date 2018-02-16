@@ -432,9 +432,18 @@ def correlate(io, day, outkey,
         load_components = components - {'R', 'T'} | {'N', 'E'}
     else:
         load_components = components
+    if station_combinations is not None:
+        load_stations = set(sta for comb in station_combinations
+                            for sta in comb.split('-'))
+    else:
+        load_stations = None
     # load data
     stream = obspy.Stream()
     for smeta in _iter_station_meta(inventory, load_components):
+        if (load_stations is not None and smeta['station'] not in load_stations
+                and '.'.join((smeta['network'], smeta['station']))
+                not in load_stations):
+            continue
         stream2 = get_data(smeta, io['data'], io['data_format'], day,
                            overlap=overlap, edge=edge)
         if stream2:
