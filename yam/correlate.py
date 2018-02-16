@@ -523,7 +523,7 @@ def correlate(io, day, outkey,
         return
     preprocess(stream, day, inventory, overlap=overlap, njobs=njobs,
                **preprocessing_kwargs)
-    # start correlation
+    # collect trace pairs for correlation
     next_day = day + 24 * 3600
     stations = sorted({tr.id[:-1] for tr in stream})
     tasks = []
@@ -564,6 +564,7 @@ def correlate(io, day, outkey,
                     comps[::-1] not in component_combinations):
                 continue
             tasks.append((tr1, tr2, dist, azi, baz))
+    # start correlation
     do_work = partial(_slide_and_correlate_traces, day, next_day, length,
                       overlap, discard, max_lag, outkey)
     streams = start_parallel_jobs_inner_loop(tasks, do_work, njobs)
@@ -576,60 +577,3 @@ def correlate(io, day, outkey,
         if stack:
             xstack = yam.stack.stack(xstream, stack)
             correlate.q.put((xstack, io['stack']))
-
-#    Loop before introduction of rotation
-#    for tr1, tr2 in itertools.combinations_with_replacement(stream, 2):
-#        # skip unwanted combinations
-#        station1 = tr1.stats.network + '.' + tr1.stats.station
-#        station2 = tr2.stats.network + '.' + tr2.stats.station
-#        comps = tr1.stats.channel[-1] + tr2.stats.channel[-1]
-#        if only_auto_correlation and station1 != station2:
-#            continue
-#        if station_combinations and not any(set(station_comb.split('-')) == (
-#                {station1, station2} if '.' in (station_comb) else
-#                {tr1.stats.station, tr2.stats.station})
-#                for station_comb in station_combinations):
-#            continue
-#        if component_combinations and (
-#                comps not in component_combinations and
-#                comps[::-1] not in component_combinations):
-#            continue
-#        # calculate distance and azimuth
-#        c1 = inventory.get_coordinates(tr1.id, datetime=tr1.stats.endtime)
-#        c2 = inventory.get_coordinates(tr2.id, datetime=tr2.stats.endtime)
-#        args = (c1['latitude'], c1['longitude'],
-#                c2['latitude'], c2['longitude'])
-#        dist, azi, baz = gps2dist_azimuth(*args)
-#        # correlate sliding streams
-#        xstream = obspy.Stream()
-#        for t1 in IterTime(day, next_day - length + overlap,
-#                           dt=length - overlap):
-#            sub = obspy.Stream([tr1, tr2]).slice(t1, t1 + length)
-#            if len(sub) < 2:
-#                continue
-#            st = [tr.stats.starttime for tr in sub]
-#            et = [tr.stats.endtime for tr in sub]
-#            if max(st) > min(et):
-#                continue
-#            sub.trim(max(st), min(et))
-#            if discard and any(
-#                    (tr.data.count() if hasattr(tr.data, 'count') else len(tr))
-#                    / tr.stats.sampling_rate / length < discard for tr in sub):
-#                continue
-#            for tr in sub:
-#                _fill_array(tr.data, fill_value=0.)
-#                tr.data = np.ma.getdata(tr.data)
-#            xtr = correlate_traces(sub[0], sub[1], max_lag)
-#            xtr.stats.starttime = t1
-#            xtr.stats.key = outkey
-#            xtr.stats.dist = dist
-#            xtr.stats.azi = azi
-#            xtr.stats.baz = baz
-#            xstream += xtr
-#        # write and/or stack stream
-#        if len(xstream) > 0:
-#            if keep_correlations:
-#                correlate.q.put((xstream, io['corr']))
-#            if stack:
-#                xstack = yam.stack.stack(xstream, stack)
-#                correlate.q.put((xstack, io['stack']))
