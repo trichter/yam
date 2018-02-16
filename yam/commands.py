@@ -162,6 +162,10 @@ def start_correlate(io,
     :param njobs: number of cores to use for computation, days are computed
         parallel, this might consume much memory, default: None -- use all
         available cores
+    :param parallel_inner_loop: Run inner loops parallel instead of outer loop
+        (preproccessing of different stations and correlation of different
+        pairs versus processing of different days).
+        Useful for a datset with many stations.
     :param keep_correlations,stack,\*\*kwargs: all other kwargs are passed to
         `~yam.correlate.correlate()` function
     """
@@ -170,10 +174,6 @@ def start_correlate(io,
         io['inventory'] = io['inventory'].select(**filter_inventory)
     log.info('start preprocessing and correlation')
     tasks = list(IterTime(UTC(startdate), UTC(enddate)))
-    # check for existing days
-    # Not perfect yet:
-    # If a day exits for one combination and not for another station
-    # combination, it will be marked as done
     done_tasks = None
     if stack is not None:
         key2 = kwargs['outkey'] + '_s' + stack

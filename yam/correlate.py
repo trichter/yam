@@ -34,10 +34,13 @@ def start_parallel_jobs_inner_loop(tasks, do_work, njobs=1):
 
 def _fill_array(data, mask=None, fill_value=None):
     """
-    Fill masked numpy array with value without demasking.
+    Mask numpy array and/or fill array value without demasking.
 
     Additionally set fill_value to value.
-    If data is not a MaskedArray returns silently data.
+    If data is not a MaskedArray and mask is None returns silently data.
+
+    :param mask: apply mask to array
+    :param fill_value: fill value
     """
     if mask is not None and mask is not False:
         data = np.ma.MaskedArray(data, mask=mask, copy=False)
@@ -241,6 +244,7 @@ def get_data(smeta, data, data_format, day, overlap=0, edge=0,
 
 
 def _shift(trace, shift):
+    """Shift trace by given time and correct starttime => interpolation"""
     msg = ('interpolate trace %s with starttime %s to shift by %.6fs '
            '(Fourier method)')
     log.debug(msg, trace.id, trace.stats.starttime, shift)
@@ -255,6 +259,7 @@ def _shift(trace, shift):
 
 def _downsample_and_shift(trace, target_sr=None, tolerance_shift=None,
                           **interpolate_options):
+    """Downsample and align samples at "good" times by shifting"""
     sr = trace.stats.sampling_rate
     if target_sr is None:
         target_sr = sr
@@ -298,6 +303,7 @@ def _downsample_and_shift(trace, target_sr=None, tolerance_shift=None,
 def _prep1(target_sr, tolerance_shift, interpolate_options,
            remove_response, inventory, remove_response_options, filter,
            tr):
+    """Helper function for parallel preprocessing"""
     tr.data = tr.data.astype('float64')
     _downsample_and_shift(tr, target_sr=target_sr,
                           tolerance_shift=tolerance_shift,
@@ -312,6 +318,7 @@ def _prep1(target_sr, tolerance_shift, interpolate_options,
 def _prep2(normalization, time_norm_options, spectral_whitening_options,
            decimate,
            tr):
+    """Helper function for parallel preprocessing"""
     tr.data = _fill_array(tr.data, fill_value=0.)
     for norm in normalization:
         if norm == 'spectral_whitening':
@@ -352,16 +359,20 @@ def preprocess(stream, day=None, inventory=None,
         ``'sprectal_whitening'`` for `spectral_whitening` and/or
         one or several of the time normalizations listed in `time_norm`
     :param downsample: downsample before preprocessing,
-        target frequency
+        target sampling rate
+    :param tolerance_shift: Samples are aligned at "good" times for the target
+        sampling rate. Specify tolerance in seconds. (default: no tolerance)
     :param decimate: decimate further by given factor after preprocessing
         (see Trace.decimate)
+    :param njobs: number of parallel workers
     :param \*_options: dictionary of options passed to the corresponding
-        function
+        functions
     """
     if time_norm_options is None:
         time_norm_options = {}
     if spectral_whitening_options is None:
         spectral_whitening_options = {}
+    spectral_whitening_options.set_default('filter', filter)
     if remove_response_options is None:
         remove_response_options = {}
     if interpolate_options is None:
@@ -374,6 +385,7 @@ def preprocess(stream, day=None, inventory=None,
     stream.traces = [tr for tr in stream if len(tr) >= 10]
     if downsample is None:
         downsample = min(tr.stats.sampling_rate for tr in stream)
+    # call _prep1 on all traces, merge stream and call _prep2 on all traces
     do_work = partial(_prep1, downsample, tolerance_shift, interpolate_options,
                       remove_response, inventory, remove_response_options,
                       filter)
@@ -382,11 +394,11 @@ def preprocess(stream, day=None, inventory=None,
     do_work = partial(_prep2, normalization, time_norm_options,
                       spectral_whitening_options, decimate)
     stream.traces = start_parallel_jobs_inner_loop(stream, do_work, njobs)
-    assert len({tr.stats.sampling_rate for tr in stream}) == 1
     if day is not None:
         next_day = day + 24 * 3600
         stream.trim(day, next_day + overlap)
     stream.sort()
+    assert len({tr.stats.sampling_rate for tr in stream}) == 1
     return stream
 
 
@@ -413,6 +425,7 @@ def correlate_traces(tr1, tr2, maxshift=3600):
 def _slide_and_correlate_traces(day, next_day, length, overlap, discard,
                                 max_lag, outkey,
                                 task):
+    """Helper function for parallel correlating"""
     tr1, tr2, dist, azi, baz = task
     xstream = obspy.Stream()
     for t1 in IterTime(day, next_day - length + overlap,
@@ -488,6 +501,8 @@ def correlate(io, day, outkey,
             use the separate stack command on correlations or stacked
             correlations.
 
+    :param njobs: number of jobs used. Some tasks will run parallel
+        (preprocessing and correlation).
     :param \*\*preprocessing_kwargs: all other kwargs are passed to
         `preprocess`
 
