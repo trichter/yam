@@ -41,8 +41,13 @@ def _analyze_key(key):
 
 def _corr_id(trace):
     st = trace.stats
-    id_ = (st.network1, st.station1, st.location1, st.channel1,
-           st.network2, st.station2, st.location2, st.channel2)
+    try:
+        id_ = (st.network1, st.station1, st.location1, st.channel1,
+               st.network2, st.station2, st.location2, st.channel2)
+    except AttributeError:
+        log.error('meta data error in read file, trace: %s, stats: %s',
+                  trace, st)
+        return
     return '%s.%s.%s.%s-%s.%s.%s.%s' % id_
 
 

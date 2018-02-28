@@ -26,6 +26,7 @@ def stack(stream, length=None, move=None):
     stream.sort()
     stream_stack = obspy.Stream()
     ids = {_corr_id(tr) for tr in stream}
+    ids.discard(None)
     for id_ in ids:
         traces = [tr for tr in stream if _corr_id(tr) == id_]
         if length is None:
