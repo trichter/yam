@@ -252,7 +252,7 @@ def _shift(trace, shift):
     spec = rfft(trace.data, nfft)
     freq = rfftfreq(nfft, trace.stats.delta)
     spec *= np.exp(-2j * np.pi * freq * shift)
-    trace.data = irfft(spec)[:len(trace)]
+    trace.data = irfft(spec, nfft)[:len(trace)]
     trace.stats.starttime -= shift
     return trace
 
