@@ -140,10 +140,7 @@ def _get_existent(fname, root, level):
 def _todo_tasks(tasks, done_tasks):
     if len(tasks) == 0:
         log.warning('no tasks found -> nothing to do')
-    # use immutable type for sets, UTCDateTime is not!
-    tasks = {t.timestamp for t in tasks}
-    done_tasks = {t.timestamp for t in done_tasks}
-    new_tasks = [UTC(t) for t in sorted(tasks - done_tasks)]
+    new_tasks = sorted(set(tasks) - set(done_tasks))
     if len(new_tasks) < len(tasks):
         msg = '%d of %d tasks already processed -> skip these tasks'
         log.info(msg, len(tasks) - len(new_tasks), len(tasks))
@@ -179,21 +176,20 @@ def start_correlate(io,
         log.debug('filter inventory')
         io['inventory'] = io['inventory'].select(**filter_inventory)
     log.info('start preprocessing and correlation')
-    tasks = list(IterTime(UTC(startdate), UTC(enddate)))
+    tasks = [str(t)[:10] for t in IterTime(UTC(startdate), UTC(enddate))]
     done_tasks = None
     if stack is not None:
         key2 = kwargs['outkey'] + '_s' + stack
-        done_tasks = [UTC(t[-16:-6]) for t in
-                      _get_existent(io['stack'], key2, 4)]
+        done_tasks = [t[-16:-6] for t in _get_existent(io['stack'], key2, 4)]
     if keep_correlations:
         key2 = kwargs['outkey']
-        done_tasks2 = [UTC(t[-16:-6]) for t in
-                       _get_existent(io['corr'], key2, 4)]
+        done_tasks2 = [t[-16:-6] for t in _get_existent(io['corr'], key2, 4)]
         if done_tasks is None:
             done_tasks = done_tasks2
         else:
             done_tasks = [t for t in done_tasks if t in done_tasks2]
     tasks = _todo_tasks(tasks, done_tasks)
+    tasks = [UTC(t) for t in tasks]
     kwargs.update({'keep_correlations': keep_correlations, 'stack': stack})
     if parallel_inner_loop:
         kwargs['njobs'] = njobs
