@@ -119,6 +119,9 @@ def _get_existent(fname, root, level):
         if level == 0:
             done.append(group.name)
             return
+        elif level == 1:
+            done.extend([group.name + '/' + subg for subg in group])
+            return
         for n in group:
             visit(group[n], level - 1)
     with h5py.File(fname, 'r') as f:
@@ -137,7 +140,10 @@ def _get_existent(fname, root, level):
 def _todo_tasks(tasks, done_tasks):
     if len(tasks) == 0:
         log.warning('no tasks found -> nothing to do')
-    new_tasks = [t for t in tasks if t not in done_tasks]
+    # use immutable type for sets, UTCDateTime is not!
+    tasks = {t.timestamp for t in tasks}
+    done_tasks = {t.timestamp for t in done_tasks}
+    new_tasks = [UTC(t) for t in sorted(tasks - done_tasks)]
     if len(new_tasks) < len(tasks):
         msg = '%d of %d tasks already processed -> skip these tasks'
         log.info(msg, len(tasks) - len(new_tasks), len(tasks))
