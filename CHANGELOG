@@ -1,4 +1,4 @@
-dev:
+v0.3.0:
   * add scan subcommand
   * add debug option (--pdb)
   * add exhaustive online documentation
