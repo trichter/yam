@@ -125,7 +125,6 @@ def stretch(stream, reftr=None, str_range=10, nstr=100,
     ltw1 = rel + np.array(time_windows[0])
     # convert streching to velocity change
     # -> minus at several places
-    print(tse['sim_mat'].shape)
     result = {'sim_mat': tse['sim_mat'][:, ::-1, :],
               'velchange_values': -tse['second_axis'][::-1] * 100,
               'times': times,
