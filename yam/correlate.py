@@ -445,11 +445,11 @@ def _slide_and_correlate_traces(day, next_day, length, overlap, discard,
             avail = min((tr.data.count() if hasattr(tr.data, 'count')
                          else len(tr)) / tr.stats.sampling_rate / length
                         for tr in sub)
-            print(avail)
             if avail < discard:
                 msg = ('discard trace combination %s-%s for time %s '
-                       '(availability %f.1\% < %f.1\% desired)')
-                log.debug(msg, sub[0].id, sub[1].id, max(st), avail, discard)
+                       '(availability %.1f%% < %.1f%% desired)')
+                log.debug(msg, sub[0].id, sub[1].id, str(max(st))[:19],
+                          100 * avail, 100 * discard)
                 continue
         for tr in sub:
             _fill_array(tr.data, fill_value=0.)

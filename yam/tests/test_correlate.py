@@ -379,7 +379,7 @@ class TestCase(unittest.TestCase):
         stream.traces = [tr for tr in stream if tr.stats.channel[-1] != 'N']
         yam_correlate(io, day, 'outkey',
                       station_combinations=('GR.FUR-GR.WET', 'RJOB-RJOB'),
-                      component_combinations=('NT', 'NR'))
+                      component_combinations=('NT', 'NR'), discard=0.0)
         self.assertEqual(len(res), 0)
         del yam_correlate.q
 
