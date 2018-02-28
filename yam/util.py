@@ -32,6 +32,8 @@ class ConfigError(YamError):
 
 
 def _analyze_key(key):
+    if key.startswith('/'):
+        key = key[1:]
     if '/' in key:
         key = key.split('/', 1)[0]
     return ''.join([k[0] for k in key.split('_')])
