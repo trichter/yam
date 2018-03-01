@@ -28,7 +28,7 @@ import numpy as np
 from warnings import warn
 
 from yam._from_miic import time_windows_creation, time_stretch_estimate
-from yam.util import _trim, _corr_id
+from yam.util import _corr_id, _trim, _trim_time_period
 import yam.stack
 
 log = logging.getLogger('yam.stretch')
@@ -65,8 +65,12 @@ def stretch(stream, reftr=None, str_range=10, nstr=100,
         log.warning('For stretch the stream must have a minimum length of 2')
         return
     ids = {_corr_id(tr) for tr in stream}
+    if None in ids:
+        ids.discard(None)
+        stream.traces = [tr for tr in stream if _corr_id(tr) is not None]
     if len(ids) != 1:
         warn('Different ids in stream: %s' % ids)
+    _trim_time_period(stream, time_period)
     stream.sort()
     sr = stream[0].stats.sampling_rate
     rel = 0.
@@ -90,7 +94,6 @@ def stretch(stream, reftr=None, str_range=10, nstr=100,
     data[np.isinf(data)] = 0
     if reftr is None:
         reftr = yam.stack.stack(stream)[0]
-
     if reftr != 'alternative':
         if hasattr(reftr, 'stats'):
             assert reftr.stats.sampling_rate == sr
