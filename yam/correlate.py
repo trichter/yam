@@ -594,10 +594,10 @@ def correlate(io, day, outkey,
     streams = start_parallel_jobs_inner_loop(tasks, do_work, njobs)
     xstream = Stream()
     xstream.traces = [tr for s_ in streams for tr in s_]
-    # write and/or stack stream
     if len(xstream) > 0:
+        res = {}
         if keep_correlations:
-            correlate.q.put((xstream, io['corr']))
+            res['corr'] = xstream
         if stack:
-            xstack = yam.stack.stack(xstream, stack)
-            correlate.q.put((xstack, io['stack']))
+            res['stack'] = yam.stack.stack(xstream, stack)
+        return res

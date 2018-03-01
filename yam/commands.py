@@ -32,16 +32,6 @@ INDEX_STRETCH = ('{key}/{network1}.{station1}-{network2}.{station2}/'
 obspyh5.set_index(INDEX)
 
 
-def _write_stream(queue):
-    while True:
-        args = queue.get()
-        if len(args) == 2:
-            stream, fname = args
-            stream.write(fname, 'H5', mode='a')
-        else:
-            break
-
-
 def write_dict(dict_, fname, mode='a', libver='latest'):
     """
     Write similarity matrix into HDF5 file
@@ -69,42 +59,6 @@ def write_dict(dict_, fname, mode='a', libver='latest'):
         for key, val in dict_.items():
             if key not in ('attrs', ):
                 group.create_dataset(key, data=val)
-
-
-def _write_stretch(queue):
-    while True:
-        args = queue.get()
-        if len(args) == 2:
-            stretchres, fname = args
-            write_dict(stretchres, fname)
-        else:
-            break
-
-
-def start_parallel_jobs(tasks, do_work, write, njobs=1):
-    queue = multiprocessing.Queue()
-    proc = multiprocessing.Process(target=write, args=(queue, ))
-    proc.start()
-    do_work.func.q = queue
-    try:
-        if njobs == 1:
-            log.info('do work sequentially')
-            for task in tqdm.tqdm(tasks, total=len(tasks)):
-                do_work(task)
-        else:
-            pool = multiprocessing.Pool(njobs)
-            log.info('do work parallel (%d cores)', pool._processes)
-            for _ in tqdm.tqdm(pool.imap_unordered(do_work, tasks),
-                               total=len(tasks)):
-                pass
-            pool.close()
-            pool.join()
-    except KeyboardInterrupt:
-        log.warning('Keyboard interrupt')
-        sys.exit()
-    finally:
-        queue.put('finished')
-        proc.join()
 
 
 def _get_existent(fname, root, level):
@@ -195,7 +149,26 @@ def start_correlate(io,
         kwargs['njobs'] = njobs
         njobs = 1
     do_work = functools.partial(correlate, io, **kwargs)
-    start_parallel_jobs(tasks, do_work, _write_stream, njobs=njobs)
+
+    def _write_stream(result):
+        if result is not None:
+            for key in result:
+                result[key].write(io[key], 'H5', mode='a')
+
+    if njobs == 1:
+        log.info('do work sequentially')
+        for task in tqdm.tqdm(tasks, total=len(tasks)):
+            result = do_work(task)
+            _write_stream(result)
+    else:
+        pool = multiprocessing.Pool(njobs)
+        log.info('do work parallel (%d cores)', pool._processes)
+        for result in tqdm.tqdm(pool.imap_unordered(do_work, tasks),
+                                total=len(tasks)):
+            _write_stream(result)
+        pool.close()
+        pool.join()
+
     log.info('finished preprocessing and correlation')
 
 
@@ -223,7 +196,7 @@ def start_stack(io, key, outkey, subkey='', **kwargs):
         stack_stream.write(io['stack'], 'H5', mode='a')
 
 
-def stretch_wrapper(groupname, fname, fname_stretch, outkey, filter=None,
+def stretch_wrapper(groupname, fname, outkey, filter=None,
                     **kwargs):
     """
     Wrapper around `~yam.stretch.stretch()`
@@ -243,7 +216,7 @@ def stretch_wrapper(groupname, fname, fname_stretch, outkey, filter=None,
     stretchres = yam.stretch.stretch(stream, **kwargs)
     if stretchres is not None:
         stretchres['attrs']['key'] = outkey
-        stretch_wrapper.q.put((stretchres, fname_stretch))
+        return stretchres
 
 
 def start_stretch(io, key, subkey='', njobs=None, **kwargs):
@@ -264,9 +237,23 @@ def start_stretch(io, key, subkey='', njobs=None, **kwargs):
     done_tasks = [t.replace(outkey, key) for t in
                   _get_existent(io['stretch'], outkey + subkey, 3)]
     tasks = _todo_tasks(tasks, done_tasks)
-    do_work = functools.partial(stretch_wrapper, fname=fname,
-                                fname_stretch=io['stretch'], **kwargs)
-    start_parallel_jobs(tasks, do_work, _write_stretch, njobs=njobs)
+    do_work = functools.partial(stretch_wrapper, fname=fname, **kwargs)
+    def _write(result):
+        if result is not None:
+            write_dict(result, io['stretch'])
+    if njobs == 1:
+        log.info('do work sequentially')
+        for task in tqdm.tqdm(tasks, total=len(tasks)):
+            result = do_work(task)
+            _write(result)
+    else:
+        pool = multiprocessing.Pool(njobs)
+        log.info('do work parallel (%d cores)', pool._processes)
+        for result in tqdm.tqdm(pool.imap_unordered(do_work, tasks),
+                                total=len(tasks)):
+            _write(result)
+        pool.close()
+        pool.join()
 
 
 def _read_dict(group):

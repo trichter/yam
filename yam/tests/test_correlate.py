@@ -328,60 +328,51 @@ class TestCase(unittest.TestCase):
         # prepare mock objects for call to yam_correlate
         def data(starttime, endtime, **kwargs):
             return stream.select(**kwargs).slice(starttime, endtime)
-        from types import SimpleNamespace
-        res = []
-        q = SimpleNamespace()
-
-        def put(arg):
-            res.append(arg[0])
-        q.put = put
-        yam_correlate.q = q
-
-        io = {'data': data, 'data_format': None,
-              'inventory': read_inventory(), 'stack': None}
-        yam_correlate(io, day, 'outkey')
-        self.assertEqual(len(res), 1)
-        self.assertEqual(len(res[0]), 6)
+        io = {'data': data, 'data_format': None, 'inventory': read_inventory()}
+        res = yam_correlate(io, day, 'outkey', keep_correlations=True)
+        self.assertEqual(len(res['corr']), 6)
         # by default only 'ZZ' combinations
-        for tr in res[0]:
+        for tr in res['corr']:
             self.assertEqual(tr.stats.station[-1], 'Z')
             self.assertEqual(tr.stats.channel[-1], 'Z')
             if len(set(tr.id.split('.'))) == 2:  # autocorr
                 np.testing.assert_allclose(xcorr_max(tr.data), (0, 1.))
 
-        res = []
-        yam_correlate(io, day, 'outkey',
-                      station_combinations=('GR.FUR-GR.WET', 'RJOB-RJOB'),
-                      component_combinations=('ZZ', 'NE', 'NR'),
-                      njobs=self.njobs)
-        self.assertEqual(len(res[0]), 7)
+        res = yam_correlate(
+                  io, day, 'outkey',
+                  station_combinations=('GR.FUR-GR.WET', 'RJOB-RJOB'),
+                  component_combinations=('ZZ', 'NE', 'NR'),
+                  keep_correlations=True,
+                  stack='1d', njobs=self.njobs)
+        self.assertEqual(len(res['corr']), 7)
+        self.assertEqual(len(res['stack']), 7)
         ids = ['RJOB.EHE.RJOB.EHN', 'RJOB.EHZ.RJOB.EHZ',
                'FUR.BHE.WET.BHN', 'FUR.BHN.WET.BHE',
                'FUR.BHR.WET.BHN', 'FUR.BHN.WET.BHR',
                'FUR.BHZ.WET.BHZ']
-        for tr in res[0]:
+        for tr in res['corr']:
             self.assertIn(tr.id, ids)
             if len(set(tr.id.split('.'))) == 2:  # autocorr
                 np.testing.assert_allclose(xcorr_max(tr.data), (0, 1.))
 
-
-        res = []
-        yam_correlate(io, day, 'outkey', only_auto_correlation=True,
-                      station_combinations=('GR.FUR-GR.WET', 'RJOB-RJOB'),
-                      component_combinations=['ZN', 'RT'], njobs=self.njobs,
-                      remove_response=True)
-        self.assertEqual(len(res[0]), 1)
-        tr = res[0][0]
+        res = yam_correlate(
+                  io, day, 'outkey', only_auto_correlation=True,
+                  station_combinations=('GR.FUR-GR.WET', 'RJOB-RJOB'),
+                  component_combinations=['ZN', 'RT'], njobs=self.njobs,
+                  keep_correlations=True,
+                  remove_response=True)
+        self.assertEqual(len(res['corr']), 1)
+        tr = res['corr'][0]
         self.assertEqual(tr.stats.station[-1], 'N')
         self.assertEqual(tr.stats.channel[-1], 'Z')
 
-        res = []
         stream.traces = [tr for tr in stream if tr.stats.channel[-1] != 'N']
-        yam_correlate(io, day, 'outkey',
-                      station_combinations=('GR.FUR-GR.WET', 'RJOB-RJOB'),
-                      component_combinations=('NT', 'NR'), discard=0.0)
-        self.assertEqual(len(res), 0)
-        del yam_correlate.q
+        res = yam_correlate(
+                  io, day, 'outkey',
+                  station_combinations=('GR.FUR-GR.WET', 'RJOB-RJOB'),
+                  component_combinations=('NT', 'NR'), discard=0.0,
+                  keep_correlations=True)
+        self.assertEqual(res, None)
 
 
 def suite():
