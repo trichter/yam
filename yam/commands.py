@@ -249,7 +249,7 @@ def start_stretch(io, key, subkey='', njobs=None, reftrid=None,
             if len(reftr) != 1:
                 raise NotImplementedError('Reference must be single trace')
             reftr = reftr[0]
-        subtasks = [t for t in _get_existent(fname, key + subkey, 4) if
+        subtasks = [t for t in _get_existent(fname, task, 4) if
                     (starttime is None or t[-16:] >= starttime) and
                     (endtime is None or t[-16:] <= endtime)]
         if reftr is None:
@@ -263,8 +263,8 @@ def start_stretch(io, key, subkey='', njobs=None, reftrid=None,
         results = []
         if njobs == 1 or len(subtask_chunks) == 1:
             log.debug('do work sequentially')
-            for task in tqdm.tqdm(subtask_chunks, total=len(subtask_chunks)):
-                result = do_work(task)
+            for stask in tqdm.tqdm(subtask_chunks, total=len(subtask_chunks)):
+                result = do_work(stask)
                 results.append(result)
         else:
             pool = multiprocessing.Pool(njobs)
