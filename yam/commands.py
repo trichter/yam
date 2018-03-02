@@ -281,28 +281,29 @@ def start_stretch(io, key, subkey='', njobs=None, reftrid=None,
             write_dict(result, io['stretch'])
 
 
-def _read_dict(group):
+def _read_dict(group, readonly=None):
     """Read a single stretching dictionary from group"""
     res = {'attrs': {}}
     for key, val in group.attrs.items():
         res['attrs'][key] = val
     for key, val in group.items():
-        if key not in ('attrs'):
+        if key != 'attrs' and (readonly is None or key in readonly):
             res[key] = val[:]
-    res['times'] = [UTC(t) for t in res['times']]
+    if 'times' in res:
+        res['times'] = [UTC(t) for t in res['times']]
     res['group'] = group.name
     return res
 
 
-def _iter_dicts(fname, groupname='/', level=3):
+def _iter_dicts(fname, groupname='/', level=3, readonly=None):
     """Iterator yielding stretching dictionaries"""
     tasks = _get_existent(fname, groupname, level)
     with h5py.File(fname, 'r') as f:
         for task in tasks:
-            yield task, _read_dict(f[task])
+            yield task, _read_dict(f[task], readonly=readonly)
 
 
-def read_dicts(fname, groupname='/', level=3):
+def read_dicts(fname, groupname='/', level=3, readonly=None):
     """
     Read dictionaries with stretching results
 
@@ -312,7 +313,7 @@ def read_dicts(fname, groupname='/', level=3):
         should not be changed
     :return: list of dictionaries with stretching results
     """
-    return [obj[1] for obj in _iter_dicts(fname, groupname, level)]
+    return [obj[1] for obj in _iter_dicts(fname, groupname, level, readonly)]
 
 
 def _iter_streams(fname, groupname='/', level=3):

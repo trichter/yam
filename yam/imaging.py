@@ -31,6 +31,7 @@ import yam.stack
 
 
 def _get_times_no_data(x):
+    """Return times without data"""
     dx = np.median(np.diff(x))
     try:
         index = np.argwhere(np.diff(x) > dx)[:, 0]
@@ -38,21 +39,37 @@ def _get_times_no_data(x):
         return {}
     tl = OrderedDict()
     for i in index:
-        tl[i] = int(round((x[i + 1] - x[i]) / dx))
+        tl[i] = int(round((x[i + 1] - x[i]) / dx)) - 1
     return tl
 
 
-def _add_value(x, tl, value=None, masked=False):
+def _add_value(x, tl, value=None, masked=False, single_value=True):
+    """Add values for missing data
+
+    :param x: The array where to add the data
+    :param tl: output of `_get_times_no_data`, dictionary with times
+    :param value: fill value, if None assume a time array
+    :param masked: mask filled values
+    :param single_value: True -- add a single value for plotting,
+        False -- fill gaps fully
+    """
     dx = np.median(np.diff(x))
-    where = [i + 1 for i in tl.keys()]
-    xs = np.split(x, where, axis=-1)
+    keys = sorted(tl.keys())
+    xs = np.split(x, [i + 1 for i in keys], axis=-1)
     xf = [xs[0]]
-    for x in xs[1:]:
-        shape = (1,)
+    for i, x in enumerate(xs[1:]):
+        if single_value:
+            shape = (1,)
+        else:
+            shape = (tl[keys[i]],)
         if len(x.shape) > 1:
             shape = (x.shape[0],) + shape
         if value is None:
             # shape not sorted out, but doesnt matter
+            # can only be used with single_value = True!!
+            # if this should be supported it needs a proper test!
+            if not single_value:
+                raise NotImplementedError
             xfn = xf[-1][-1] + dx
         else:
             xfn = np.ones(shape) * value
