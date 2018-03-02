@@ -216,6 +216,9 @@ def run2(command, io,
             kw = {}
             if 'm' in stackid:
                 kw['length'], kw['move'] = stackid.split('m')
+            elif stackid in ('', 'all', 'None', 'none', 'null'):
+                stackid = ''
+                kw['length'] = None
             else:
                 kw['length'] = stackid
         kw['outkey'] = key + '_s' + stackid

@@ -29,7 +29,7 @@ def stack(stream, length=None, move=None):
     ids.discard(None)
     for id_ in ids:
         traces = [tr for tr in stream if _corr_id(tr) == id_]
-        if length in (None, '', 'None', 'none', 'null'):
+        if length is None:
             data = np.mean([tr.data for tr in traces], axis=0)
             tr_stack = obspy.Trace(data, header=traces[0].stats)
             tr_stack.stats.key = tr_stack.stats.key + '_s'

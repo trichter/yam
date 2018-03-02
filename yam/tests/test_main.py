@@ -226,7 +226,8 @@ def get_data(starttime, endtime, **smeta):
         po = ('--plot-options {"show_line":true,'
                               '"time_period":[null,"2010-02-05"]}')
         self.out('stretch c1_s1d/CX.PATCX-CX.PATCX 1')
-        self.out('stretch c1_s1d 1')
+        self.out("stack c1_s1d None")
+        self.out('stretch c1_s1d 1 --reftrid c1_s1d_s')
         self.out('stretch cauto/CX.PATCX-CX.PATCX/.BHZ-.BHZ 2')
         self.out('stretch cauto 2')
         self.out('remove cauto_t2/CX.PATCX-CX.PATCX/.BHZ-.BHZ')

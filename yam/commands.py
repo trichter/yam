@@ -245,7 +245,8 @@ def start_stretch(io, key, subkey='', njobs=None, reftrid=None,
             reftr = None
         else:
             fname_reftr = _get_fname(io, reftrid)
-            reftr = obspy.read(fname_reftr, 'H5', group=reftrid + subkey)
+            group_reftr = task.replace(key, reftrid)
+            reftr = obspy.read(fname_reftr, 'H5', group=group_reftr)
             if len(reftr) != 1:
                 raise NotImplementedError('Reference must be single trace')
             reftr = reftr[0]
