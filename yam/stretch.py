@@ -36,13 +36,14 @@ log = logging.getLogger('yam.stretch')
 
 
 def join_dicts(dicts):
-    """Join sorted list of dictionaries with stretching results"""
+    """Join list of dictionaries with stretching results"""
     if len(dicts) == 0:
         return
     elif len(dicts) == 1:
         return dicts[0]
+    dicts = sorted(dicts, key=lambda d: d['times'][0])
+    dim1 = sum(len(d['times']) for d in dicts)
     d = dicts[0]
-    dim1 = sum(len(r['times']) for r in dicts)
     dim2 = len(d['velchange_values'])
     dim3 = len(d['lag_time_windows'])
     res = {'sim_mat': np.empty((dim1, dim2, dim3), dtype=float),
@@ -60,6 +61,7 @@ def join_dicts(dicts):
         res['times'][i:j] = d['times']
         res['velchange_vs_time'][i:j, :] = d['velchange_vs_time']
         res['corr_vs_time'][i:j, :] = d['corr_vs_time']
+        i = j
     return res
 
 
