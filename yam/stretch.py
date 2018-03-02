@@ -34,6 +34,35 @@ import yam.stack
 log = logging.getLogger('yam.stretch')
 
 
+
+def join_dicts(dicts):
+    """Join sorted list of dictionaries with stretching results"""
+    if len(dicts) == 0:
+        return
+    elif len(dicts) == 1:
+        return dicts[0]
+    d = dicts[0]
+    dim1 = sum(len(r['times']) for r in dicts)
+    dim2 = len(d['velchange_values'])
+    dim3 = len(d['lag_time_windows'])
+    res = {'sim_mat': np.empty((dim1, dim2, dim3), dtype=float),
+           'velchange_values': d['velchange_values'],
+           'times': np.empty(dim1, dtype=d['times'].dtype),
+           'velchange_vs_time': np.empty((dim1, dim3), dtype=float),
+           'corr_vs_time': np.empty((dim1, dim3), dtype=float),
+           'lag_time_windows': d['lag_time_windows'],
+           'attrs': d['attrs']}
+    res['attrs']['endtime'] = dicts[-1]['attrs']['endtime']
+    i = 0
+    for d in dicts:
+        j = i + len(d['times'])
+        res['sim_mat'][i:j, :, :] = d['sim_mat']
+        res['times'][i:j] = d['times']
+        res['velchange_vs_time'][i:j, :] = d['velchange_vs_time']
+        res['corr_vs_time'][i:j, :] = d['corr_vs_time']
+    return res
+
+
 def stretch(stream, reftr=None, str_range=10, nstr=100,
             time_windows=None,
             time_windows_relative=None, sides='right',

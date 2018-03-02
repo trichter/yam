@@ -196,7 +196,7 @@ def start_stack(io, key, outkey, subkey='', **kwargs):
         stack_stream.write(io['stack'], 'H5', mode='a')
 
 
-def stretch_wrapper(groupname, fname, outkey, filter=None,
+def stretch_wrapper(groupnames, fname, outkey, filter=None,
                     **kwargs):
     """
     Wrapper around `~yam.stretch.stretch()`
@@ -210,7 +210,9 @@ def stretch_wrapper(groupname, fname, outkey, filter=None,
     :param \*\*kwargs: all other kwargs are passed to
         `~yam.stretch.stretch()` function
     """
-    stream = obspy.read(fname, 'H5', group=groupname)
+    with h5py.File(fname, 'r') as f:
+        traces = [obspyh5.dataset2trace(f[g]) for g in groupnames]
+    stream = obspy.Stream(traces)
     if filter:
         _filter(stream, filter)
     stretchres = yam.stretch.stretch(stream, **kwargs)
@@ -219,7 +221,8 @@ def stretch_wrapper(groupname, fname, outkey, filter=None,
         return stretchres
 
 
-def start_stretch(io, key, subkey='', njobs=None, **kwargs):
+def start_stretch(io, key, subkey='', njobs=None, reftrid=None,
+                  starttime=None, endtime=None, **kwargs):
     """
     Start stretching
 
@@ -237,23 +240,44 @@ def start_stretch(io, key, subkey='', njobs=None, **kwargs):
     done_tasks = [t.replace(outkey, key) for t in
                   _get_existent(io['stretch'], outkey + subkey, 3)]
     tasks = _todo_tasks(tasks, done_tasks)
-    do_work = functools.partial(stretch_wrapper, fname=fname, **kwargs)
-    def _write(result):
+    for task in tqdm.tqdm(tasks, total=len(tasks)):
+        if reftrid is None:
+            reftr = None
+        else:
+            fname_reftr = _get_fname(io, reftrid)
+            reftr = obspy.read(fname_reftr, 'H5', group=reftrid + subkey)
+            if len(reftr) != 1:
+                raise NotImplementedError('Reference must be single trace')
+            reftr = reftr[0]
+        subtasks = [t for t in _get_existent(fname, key + subkey, 4) if
+                    (starttime is None or t[-16:] >= starttime) and
+                    (endtime is None or t[-16:] <= endtime)]
+        if reftr is None:
+            subtask_chunks = [tuple(subtasks)]
+        else:
+            step = 1000
+            subtask_chunks = [tuple(subtasks[i:i+step]) for i in
+                              range(0, len(subtasks), step)]
+        do_work = functools.partial(stretch_wrapper, fname=fname,
+                                    reftr=reftr, **kwargs)
+        results = []
+        if njobs == 1 or len(subtask_chunks) == 1:
+            log.debug('do work sequentially')
+            for task in tqdm.tqdm(subtask_chunks, total=len(subtask_chunks)):
+                result = do_work(task)
+                results.append(result)
+        else:
+            pool = multiprocessing.Pool(njobs)
+            log.debug('do work parallel (%d cores)', pool._processes)
+            for result in tqdm.tqdm(
+                    pool.imap(do_work, subtask_chunks),
+                    total=len(subtask_chunks)):
+                results.append(result)
+            pool.close()
+            pool.join()
+        result = yam.stretch.join_dicts(results)
         if result is not None:
             write_dict(result, io['stretch'])
-    if njobs == 1:
-        log.info('do work sequentially')
-        for task in tqdm.tqdm(tasks, total=len(tasks)):
-            result = do_work(task)
-            _write(result)
-    else:
-        pool = multiprocessing.Pool(njobs)
-        log.info('do work parallel (%d cores)', pool._processes)
-        for result in tqdm.tqdm(pool.imap_unordered(do_work, tasks),
-                                total=len(tasks)):
-            _write(result)
-        pool.close()
-        pool.join()
 
 
 def _read_dict(group):

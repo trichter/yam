@@ -322,6 +322,8 @@ def run_cmdline(args=None):
     p_stack.add_argument('stackid', help=msg)
     msg = 'configuration key for stretching'
     p_stretch.add_argument('stretchid', help=msg)
+    msg = 'key of reference trace (stack)'
+    p_stretch.add_argument('--reftrid', help=msg)
 
     msg1 = 'more detailed information about '
     msg2 = ('stations, data or specific processing key '
