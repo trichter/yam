@@ -358,7 +358,7 @@ def run_cmdline(args=None):
         msg = 'Set chattiness on command line. Up to 3 -v flags are possible'
         p2.add_argument('-v', '--verbose', help=msg, action='count',
                         default=SUPPRESS)
-    for p2 in (p_correlate, p_stretch):
+    for p2 in (p_correlate, p_stack, p_stretch):
         msg = ('Number of cores to use (default: all), '
                'only applies to some commands')
         p2.add_argument('-n', '--njobs', default=None, type=int, help=msg)

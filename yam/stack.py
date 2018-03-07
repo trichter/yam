@@ -33,6 +33,10 @@ def stack(stream, length=None, move=None):
             data = np.mean([tr.data for tr in traces], axis=0)
             tr_stack = obspy.Trace(data, header=traces[0].stats)
             tr_stack.stats.key = tr_stack.stats.key + '_s'
+            if 'num' in traces[0].stats:
+                tr_stack.stats.num = sum(tr.stats.num for tr in traces)
+            else:
+                tr_stack.stats.num = len(traces)
             stream_stack.append(tr_stack)
         else:
             t1 = traces[0].stats.starttime
@@ -55,8 +59,8 @@ def stack(stream, length=None, move=None):
                 key_add = '_s%s' % length + (move is not None) * ('m%s' % move)
                 tr_stack.stats.key = tr_stack.stats.key + key_add
                 tr_stack.stats.starttime = t
-                if 'num' in sel[0].stats:
-                    tr_stack.stats.num = [tr.stats.num for tr in sel]
+                if 'num' in traces[0].stats:
+                    tr_stack.stats.num = sum(tr.stats.num for tr in sel)
                 else:
                     tr_stack.stats.num = len(sel)
                 stream_stack.append(tr_stack)

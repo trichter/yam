@@ -5,11 +5,11 @@ import glob
 import logging
 import multiprocessing
 import os
-import sys
 import shutil
 import textwrap
 
 import h5py
+import numpy as np
 import obspy
 from obspy.core import UTCDateTime as UTC
 import obspyh5
@@ -172,7 +172,27 @@ def start_correlate(io,
     log.info('finished preprocessing and correlation')
 
 
-def start_stack(io, key, outkey, subkey='', **kwargs):
+def _stack_wrapper(groupnames, fname, outkey, **kwargs):
+    """
+    Wrapper around `~yam.stack.stack()`
+
+    :param groupnames: groups to load the correlations from
+    :param fname: file to load correlations from
+    :param outkey: key to write stacked correlations to
+    :param \*\*kwargs: all other kwargs are passed to
+        `~yam.stack.stack()` function
+    """
+    with h5py.File(fname, 'r') as f:
+        traces = [obspyh5.dataset2trace(f[g]) for g in groupnames]
+    stream = obspy.Stream(traces)
+    stack_stream = yam.stack.stack(stream, **kwargs)
+    for tr in stack_stream:
+        tr.stats.key = outkey
+    return stack_stream
+
+
+def start_stack(io, key, outkey, subkey='', starttime=None, endtime=None,
+                njobs=None, **kwargs):
     """
     Start stacking
 
@@ -188,23 +208,79 @@ def start_stack(io, key, outkey, subkey='', **kwargs):
     done_tasks = [t.replace(outkey, key) for t in
                   _get_existent(io['stack'], outkey + subkey, 3)]
     tasks = _todo_tasks(tasks, done_tasks)
+    length = kwargs.get('length')
     for task in tqdm.tqdm(tasks, total=len(tasks)):
-        stream = obspy.read(fname, 'H5', group=task)
-        stack_stream = yam.stack.stack(stream, **kwargs)
-        for tr in stack_stream:
-            tr.stats.key = outkey
-        stack_stream.write(io['stack'], 'H5', mode='a')
+        subtasks = [t for t in _get_existent(fname, task, 4) if
+                    (starttime is None or t[-16:] >= starttime) and
+                    (endtime is None or t[-16:] <= endtime)]
+        if length is None and njobs != 1:
+            step = 1000
+            subtask_chunks = [tuple(subtasks[i:i + step]) for i in
+                              range(0, len(subtasks), step)]
+        else:
+            subtask_chunks = [subtasks]
+            # TODO: parallel stacking for arbitrary stack id
+#            lensec = _time2sec(length)
+#            if lensec >= 30 * 24 * 3600:
+#                subtask_chunks = [subtasks]
+#            else:
+#                subtask_chunks = []
+#                for i in range(0, len(subtasks), step):
+#                    chunk = subtasks[i:i + step]
+#                    t1 = UTC(subtasks[i + step - 1][-16:])
+#                    j = 0
+#                    while i + step + j < len(subtasks):
+#                        t2 = UTC(subtasks[i + step + j][-16:])
+#                        # assume lensec is always larger than movesec
+#                        # not ideal, may load to much data
+#                        # eg for stack over 1 year
+#                        if t2 - t1 <= lensec:
+#                            chunk.append(subtasks[i + step + j])
+#                        else:
+#                            break
+#                        j += 1
+#                    subtask_chunks.append(chunk)
+        do_work = functools.partial(_stack_wrapper, fname=fname, outkey=outkey,
+                                    **kwargs)
+        results = []
+        if njobs == 1 or len(subtask_chunks) == 1:
+            log.debug('do work sequentially')
+            for stask in tqdm.tqdm(subtask_chunks, total=len(subtask_chunks)):
+                result = do_work(stask)
+                results.append(result)
+        else:
+            pool = multiprocessing.Pool(njobs)
+            log.debug('do work parallel (%d cores)', pool._processes)
+            for result in tqdm.tqdm(
+                    pool.imap(do_work, subtask_chunks),
+                    total=len(subtask_chunks)):
+                results.append(result)
+            pool.close()
+            pool.join()
+        if length is None:
+            for stream in results:
+                assert len(stream) <= 1
+            traces = [tr for stream in results for tr in stream]
+            num = sum(tr.stats.num for tr in traces)
+            data = np.sum([tr.data * (tr.stats.num / num) for tr in traces],
+                          axis=0)
+            tr_stack = obspy.Trace(data, header=traces[0].stats)
+            tr_stack.stats.num = num
+            tr_stack.write(io['stack'], 'H5', mode='a')
+        else:
+            for stack_stream in results:
+                stack_stream.write(io['stack'], 'H5', mode='a')
 
 
-def stretch_wrapper(groupnames, fname, outkey, filter=None,
-                    **kwargs):
+def _stretch_wrapper(groupnames, fname, outkey, filter=None,
+                     **kwargs):
     """
     Wrapper around `~yam.stretch.stretch()`
 
     :param groupname: group to load the correlations from
     :param fname: file to load correlations from
     :param fname_stretch: file for writing results
-    :param outkey: key to write stacked correlations to
+    :param outkey: key to write stretch results to
     :param filter: filter correlations before stretching
         (bandpass, tuple with min and max frequency)
     :param \*\*kwargs: all other kwargs are passed to
@@ -257,9 +333,9 @@ def start_stretch(io, key, subkey='', njobs=None, reftrid=None,
             subtask_chunks = [tuple(subtasks)]
         else:
             step = 1000
-            subtask_chunks = [tuple(subtasks[i:i+step]) for i in
+            subtask_chunks = [tuple(subtasks[i:i + step]) for i in
                               range(0, len(subtasks), step)]
-        do_work = functools.partial(stretch_wrapper, fname=fname,
+        do_work = functools.partial(_stretch_wrapper, fname=fname,
                                     reftr=reftr, **kwargs)
         results = []
         if njobs == 1 or len(subtask_chunks) == 1:
