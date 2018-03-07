@@ -184,6 +184,7 @@ def velocity_change_estimete(mat, tw, strrefmat, strvec, sides='both',
         den = np.sqrt(np.dot(f_sq.T, s_sq))
 
         tmp = dprod / den
+        tmp[np.isnan(tmp)] = 0  # warning is already issued
         sim_mat[:, :, ii] = tmp
 
         tmp_corr_vect = tmp.max(axis=1)
