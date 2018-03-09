@@ -37,7 +37,8 @@ class TestCase(unittest.TestCase):
                     time_windows=[[1], 4], sides='both')
         # TODO: check where the small deviation comes from
         np.testing.assert_allclose(d['velchange_vs_time'],
-                                   vel_changes, atol=0.008)
+                                   np.array(vel_changes)[:, np.newaxis],
+                                   atol=0.008)
         # test writing and reading
         with tempfile.TemporaryDirectory(prefix='yam_') as tmpdir:
             fname = os.path.join(tmpdir, 'stretch.h5')

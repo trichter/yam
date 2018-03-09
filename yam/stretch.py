@@ -59,6 +59,18 @@ def _index_sorted(l1, l2):
             index[j] = False
     return index
 
+def _update_result(res):
+    dim1 = len(res['times'])
+    dim3 = len(res['lag_time_windows'])
+    dtype = res['sim_mat'].dtype
+    res['velchange_vs_time'] = np.empty((dim1, dim3), dtype=dtype)
+    res['corr_vs_time'] = np.empty((dim1, dim3), dtype=dtype)
+    for i in range(dim3):
+        tmp = res['sim_mat'][:, :, i]
+        res['corr_vs_time'][:, i] = np.max(tmp, axis=1)
+        argmax = np.argmax(tmp, axis=1)
+        res['velchange_vs_time'][:, i] = res['velchange_values'][argmax]
+
 def join_dicts(dicts):
     """Join list of dictionaries with stretching results"""
     if len(dicts) == 0:
@@ -97,27 +109,18 @@ def average_dicts(dicts):
     elif len(dicts) == 1:
         return dicts[0]
     times = functools.reduce(_intersect_sorted, [d['times'] for d in dicts])
-    dim1 = len(times)
     d = dicts[0]
-    dim3 = len(d['lag_time_windows'])
     sim_mat = np.mean(
             [d['sim_mat'][_index_sorted(d['times'], times), :, :]
              for d in dicts], axis=0)
-    dtype = sim_mat.dtype
     res = {'sim_mat': sim_mat,
            'velchange_values': d['velchange_values'],
            'times': np.array(times),
-           'velchange_vs_time': np.empty((dim1, dim3), dtype=dtype),
-           'corr_vs_time': np.empty((dim1, dim3), dtype=dtype),
            'lag_time_windows': d['lag_time_windows'],
            'attrs': d['attrs']}
     res['attrs']['channel1'] = '???'
     res['attrs']['channel2'] = '???'
-    for i in range(dim3):
-        tmp = sim_mat[:, :, i]
-        res['corr_vs_time'][:, i] = np.max(tmp, axis=1)
-        argmax = np.argmax(tmp, axis=1)
-        res['velchange_vs_time'][:, i] = d['velchange_values'][argmax]
+    _update_result(res)
     return res
 
 
@@ -215,14 +218,11 @@ def stretch(stream, reftr=None, str_range=10, nstr=100,
     ltw1 = rel + np.array(time_windows[0])
     # convert streching to velocity change
     # -> minus at several places
-    if len(tse['sim_mat'].shape) == 2:
-        # single streching window -> create new axis
-        tse['sim_mat'] = tse['sim_mat'][:, :, np.newaxis]
     result = {'sim_mat': tse['sim_mat'][:, ::-1, :],
               'velchange_values': -tse['second_axis'][::-1] * 100,
               'times': times,
-              'velchange_vs_time': -tse['value'] * 100,
-              'corr_vs_time': tse['corr'],
+              #'velchange_vs_time': -tse['value'] * 100,
+              #'corr_vs_time': tse['corr'],
               'lag_time_windows': np.transpose([ltw1, ltw1 + time_windows[1]]),
               'attrs': {'nstr': nstr,
                         'str_range': str_range,
@@ -231,6 +231,7 @@ def stretch(stream, reftr=None, str_range=10, nstr=100,
                         'endtime': stream[-1].stats.starttime
                         }
               }
+    _update_result(result)
     for k in ('network1', 'network2', 'station1', 'station2',
               'location1', 'location2', 'channel1', 'channel2',
               'sampling_rate', 'dist', 'azi', 'baz'):

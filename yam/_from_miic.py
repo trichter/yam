@@ -187,22 +187,22 @@ def velocity_change_estimete(mat, tw, strrefmat, strvec, sides='both',
         tmp[np.isnan(tmp)] = 0  # warning is already issued
         sim_mat[:, :, ii] = tmp
 
-        tmp_corr_vect = tmp.max(axis=1)
-        corr[ii, :] = tmp_corr_vect
-        dt[ii, :] = strvec[tmp.argmax(axis=1)]
+#        tmp_corr_vect = tmp.max(axis=1)
+#        corr[ii, :] = tmp_corr_vect
+#        dt[ii, :] = strvec[tmp.argmax(axis=1)]
 
         # Set dt to NaN where the correlation is NaN instead of having it equal
         # to one of the two stretch_range limits
-        dt[ii, np.isnan(tmp_corr_vect)] = np.nan
+#        dt[ii, np.isnan(tmp_corr_vect)] = np.nan
 
-    dv = {'corr': np.squeeze(corr),
-          'value': np.squeeze(dt),
+    dv = {#'corr': corr,
+          #'value': dt,
           'second_axis': strvec,
           'value_type': np.array(['stretch']),
           'method': np.array(['single_ref'])}
 
     if return_sim_mat:
-        dv.update({'sim_mat': np.squeeze(sim_mat)})
+        dv.update({'sim_mat': sim_mat})
 
     return dv
 
@@ -583,8 +583,8 @@ def time_stretch_estimate(corr_data, ref_trc=None, tw=None, stretch_range=0.1,
 
     # TODO: It is not really clear why it it necessary to transpose here so
     # this is the fist point where to look in case of errors.
-    dv['corr'] = dv['corr'].T
-    dv['value'] = dv['value'].T
+    #dv['corr'] = dv['corr'].T
+    #dv['value'] = dv['value'].T
     # dv.update({'stretch_vec': stretchs})
 
     return dv
