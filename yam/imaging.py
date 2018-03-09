@@ -287,7 +287,7 @@ def plot_sim_mat(res, bname=None, figsize=(10, 5), ext='.png',
         ax = fig.add_subplot(111)
         np.transpose(res['sim_mat'][:, :, itw])
         data = np.transpose(res['sim_mat'][:, :, itw])
-        x = copy(res['times'])
+        x = [UTC(t) for t in res['times']]
         no_data = _get_times_no_data(x)
         x = _add_value(x, no_data)
         x = [t.datetime for t in x]

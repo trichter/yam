@@ -362,11 +362,13 @@ def _read_dict(group, readonly=None):
     res = {'attrs': {}}
     for key, val in group.attrs.items():
         res['attrs'][key] = val
+        if key in ('starttime', 'endtime'):
+            res['attrs'][key] = UTC(val)
     for key, val in group.items():
         if key != 'attrs' and (readonly is None or key in readonly):
             res[key] = val[:]
-    if 'times' in res:
-        res['times'] = [UTC(t) for t in res['times']]
+#    if 'times' in res:
+#        res['times'] = [UTC(t) for t in res['times']]
     res['group'] = group.name
     return res
 

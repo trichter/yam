@@ -24,6 +24,7 @@ The results are returned in a dictionary with the following entries:
 """
 
 import logging
+import functools
 import numpy as np
 from warnings import warn
 
@@ -33,7 +34,30 @@ import yam.stack
 
 log = logging.getLogger('yam.stretch')
 
+def _intersect_sorted(l1, l2):
+    i = 0
+    res = []
+    for el in l1:
+        while l2[i] < el:
+            i += 1
+        if l2[i] == el:
+            res.append(el)
+            i += 1
+    return res
 
+def _index_sorted(l1, l2):
+    index = np.empty(len(l1), dtype=bool)
+    i = 0
+    for j, el in enumerate(l1):
+        if len(l2) <= i:
+            index[j:] = False
+            break
+        if l2[i] == el:
+            index[j] = True
+            i += 1
+        else:
+            index[j] = False
+    return index
 
 def join_dicts(dicts):
     """Join list of dictionaries with stretching results"""
@@ -46,11 +70,12 @@ def join_dicts(dicts):
     d = dicts[0]
     dim2 = len(d['velchange_values'])
     dim3 = len(d['lag_time_windows'])
-    res = {'sim_mat': np.empty((dim1, dim2, dim3), dtype=float),
+    dtype = d['sim_mat'].dtype
+    res = {'sim_mat': np.empty((dim1, dim2, dim3), dtype=dtype),
            'velchange_values': d['velchange_values'],
            'times': np.empty(dim1, dtype=d['times'].dtype),
-           'velchange_vs_time': np.empty((dim1, dim3), dtype=float),
-           'corr_vs_time': np.empty((dim1, dim3), dtype=float),
+           'velchange_vs_time': np.empty((dim1, dim3), dtype=dtype),
+           'corr_vs_time': np.empty((dim1, dim3), dtype=dtype),
            'lag_time_windows': d['lag_time_windows'],
            'attrs': d['attrs']}
     res['attrs']['endtime'] = dicts[-1]['attrs']['endtime']
@@ -62,6 +87,37 @@ def join_dicts(dicts):
         res['velchange_vs_time'][i:j, :] = d['velchange_vs_time']
         res['corr_vs_time'][i:j, :] = d['corr_vs_time']
         i = j
+    return res
+
+
+def average_dicts(dicts):
+    """Average list of dictionaries with stretching results"""
+    if len(dicts) == 0:
+        return
+    elif len(dicts) == 1:
+        return dicts[0]
+    times = functools.reduce(_intersect_sorted, [d['times'] for d in dicts])
+    dim1 = len(times)
+    d = dicts[0]
+    dim3 = len(d['lag_time_windows'])
+    sim_mat = np.mean(
+            [d['sim_mat'][_index_sorted(d['times'], times), :, :]
+             for d in dicts], axis=0)
+    dtype = sim_mat.dtype
+    res = {'sim_mat': sim_mat,
+           'velchange_values': d['velchange_values'],
+           'times': np.array(times),
+           'velchange_vs_time': np.empty((dim1, dim3), dtype=dtype),
+           'corr_vs_time': np.empty((dim1, dim3), dtype=dtype),
+           'lag_time_windows': d['lag_time_windows'],
+           'attrs': d['attrs']}
+    res['attrs']['channel1'] = '???'
+    res['attrs']['channel2'] = '???'
+    for i in range(dim3):
+        tmp = sim_mat[:, :, i]
+        res['corr_vs_time'][:, i] = np.max(tmp, axis=1)
+        argmax = np.argmax(tmp, axis=1)
+        res['velchange_vs_time'][:, i] = d['velchange_values'][argmax]
     return res
 
 
@@ -159,6 +215,9 @@ def stretch(stream, reftr=None, str_range=10, nstr=100,
     ltw1 = rel + np.array(time_windows[0])
     # convert streching to velocity change
     # -> minus at several places
+    if len(tse['sim_mat'].shape) == 2:
+        # single streching window -> create new axis
+        tse['sim_mat'] = tse['sim_mat'][:, :, np.newaxis]
     result = {'sim_mat': tse['sim_mat'][:, ::-1, :],
               'velchange_values': -tse['second_axis'][::-1] * 100,
               'times': times,
