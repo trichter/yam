@@ -39,6 +39,13 @@ def _analyze_key(key):
     return ''.join([k[0] for k in key.split('_')])
 
 
+def _get_fname(io, key):
+    fname = (io['stretch'] if 't' in _analyze_key(key)
+             else io['stack'] if 's' in _analyze_key(key)
+             else io['corr'])
+    return fname
+
+
 def _corr_id(trace):
     st = trace.stats
     try:
