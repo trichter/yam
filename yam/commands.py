@@ -487,13 +487,12 @@ def load(io, key, seedid=None, day=None, do='return', prep_kw={},
     elif do == 'return':
         return obj
     elif do == 'export':
-        print(obj)
+        print('export', obj)
         if format == 'H5':
-            import obspyh5
-            from.io import INDEX
             obspyh5.set_index()
         obj.write(fname, format)
         if format == 'H5':
+            from yam.io import INDEX
             obspyh5.set_index(INDEX)
     else:
         raise
