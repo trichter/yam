@@ -17,13 +17,15 @@ import tqdm
 
 import yam
 from yam.correlate import correlate
-from yam.io import _get_existent, write_dict, read_dicts, _iter_h5
+from yam.io import _get_existent, _iter_h5, _write_corr, read_dicts, write_dict
 import yam.stack
 import yam.stretch
 from yam.util import _analyze_key, _filter, _get_fname, IterTime, ParseError
 
 
 log = logging.getLogger('yam.commands')
+
+
 
 
 def _todo_tasks(tasks, done_tasks):
@@ -41,6 +43,7 @@ def start_correlate(io,
                     startdate='1990-01-01', enddate='2020-01-01',
                     njobs=None,
                     parallel_inner_loop=False,
+                    dtype='float16',
                     keep_correlations=False,
                     stack='1d',
                     **kwargs):
@@ -51,13 +54,15 @@ def start_correlate(io,
     :param filter_inventory: filter inventory with its select method,
         specified dict is passed to |Inventory.select|
     :param str startdate,enddate: start and end date as strings
-    :param njobs: number of cores to use for computation, days are computed
+    : param njobs: number of cores to use for computation, days are computed
         parallel, this might consume much memory, default: None -- use all
         available cores
     :param parallel_inner_loop: Run inner loops parallel instead of outer loop
         (preproccessing of different stations and correlation of different
         pairs versus processing of different days).
         Useful for a datset with many stations.
+    :param dtype: data type for storing correlations
+        (default: float16 - half precision)
     :param keep_correlations,stack,\*\*kwargs: all other kwargs are passed to
         `~yam.correlate.correlate()` function
     """
@@ -84,23 +89,17 @@ def start_correlate(io,
         kwargs['njobs'] = njobs
         njobs = 1
     do_work = functools.partial(correlate, io, **kwargs)
-
-    def _write_stream(result):
-        if result is not None:
-            for key in result:
-                result[key].write(io[key], 'H5', mode='a')
-
     if njobs == 1:
         log.info('do work sequentially')
         for task in tqdm.tqdm(tasks, total=len(tasks)):
             result = do_work(task)
-            _write_stream(result)
+            _write_corr(result, io, dtype=dtype)
     else:
         pool = multiprocessing.Pool(njobs)
         log.info('do work parallel (%d cores)', pool._processes)
         for result in tqdm.tqdm(pool.imap_unordered(do_work, tasks),
                                 total=len(tasks)):
-            _write_stream(result)
+            _write_corr(result, io, dtype=dtype)
         pool.close()
         pool.join()
 
@@ -126,8 +125,8 @@ def _stack_wrapper(groupnames, fname, outkey, **kwargs):
     return stack_stream
 
 
-def start_stack(io, key, outkey, subkey='', starttime=None, endtime=None,
-                njobs=None, **kwargs):
+def start_stack(io, key, outkey, subkey='', njobs=None,
+                starttime=None, endtime=None, **kwargs):
     """
     Start stacking
 
@@ -135,6 +134,9 @@ def start_stack(io, key, outkey, subkey='', starttime=None, endtime=None,
     :param key:  key to load correlations from
     :param outkey: key to write stacked correlations to
     :param subkey: only use a part of the correlations
+    :param njobs: number of cores to use for computation,
+        default: None -- use all available cores
+    :param starttime,endtime: constrain start and end dates
     :param \*\*kwargs: all other kwargs are passed to
         `yam.stack.stack()` function
     """
@@ -224,6 +226,8 @@ def _stretch_wrapper(groupnames, fname, outkey, filter=None,
     with h5py.File(fname, 'r') as f:
         traces = [obspyh5.dataset2trace(f[g]) for g in groupnames]
     stream = obspy.Stream(traces)
+    for tr in stream:
+        tr.data = np.require(tr.data, float)
     if filter:
         _filter(stream, filter)
     stretchres = yam.stretch.stretch(stream, **kwargs)
@@ -233,7 +237,8 @@ def _stretch_wrapper(groupnames, fname, outkey, filter=None,
 
 
 def start_stretch(io, key, subkey='', njobs=None, reftrid=None,
-                  starttime=None, endtime=None, **kwargs):
+                  starttime=None, endtime=None, dtype='float16',
+                  **kwargs):
     """
     Start stretching
 
@@ -241,7 +246,13 @@ def start_stretch(io, key, subkey='', njobs=None, reftrid=None,
     :param key:  key to load correlations from
     :param subkey: only use a part of the correlations
     :param njobs: number of cores to use for computation,
-        might consume much memory, default: None -- use all available cores
+        default: None -- use all available cores
+    :param reftrid: Parallel processing is only possible when this parameter
+        is specified. Key to load the reference trace from, e.g. `'c1_s'`,
+        it can be created by a command similar to `yam stack c1 ''`.
+    :param starttime,endtime: constrain start and end dates
+    :param dtype: data type for storing similarity matrices
+        (default: float16 - half precision)
     :param \*\*kwargs: all other kwargs are passed to
         `stretch_wrapper()` function
     """
@@ -257,7 +268,8 @@ def start_stretch(io, key, subkey='', njobs=None, reftrid=None,
         else:
             fname_reftr = _get_fname(io, reftrid)
             group_reftr = task.replace(key, reftrid)
-            reftr = obspy.read(fname_reftr, 'H5', group=group_reftr)
+            reftr = obspy.read(fname_reftr, 'H5', group=group_reftr,
+                               dtype=float)
             if len(reftr) != 1:
                 raise NotImplementedError('Reference must be single trace')
             reftr = reftr[0]
@@ -289,7 +301,7 @@ def start_stretch(io, key, subkey='', njobs=None, reftrid=None,
             pool.join()
         result = yam.stretch.join_dicts(results)
         if result is not None:
-            write_dict(result, io['stretch'])
+            write_dict(result, io['stretch'], dtype=dtype)
 
 
 def _start_ipy(obj):

@@ -46,7 +46,9 @@ class TestCase(unittest.TestCase):
             write_dict(d, fname)
             d2 = read_dicts(fname)[0]
             for key in d:
-                if isinstance(d2[key], np.ndarray):
+                if key == 'sim_mat':
+                    np.testing.assert_allclose(d2[key], d[key], rtol=1e-3)
+                elif isinstance(d2[key], np.ndarray):
                     np.testing.assert_equal(d2[key], d[key])
                 else:
                     self.assertEqual(d2[key], d[key])

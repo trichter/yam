@@ -19,7 +19,7 @@ INDEX_STRETCH = ('{key}/{network1}.{station1}-{network2}.{station2}/'
 obspyh5.set_index(INDEX)
 
 
-def write_dict(dict_, fname, mode='a', libver='latest'):
+def write_dict(dict_, fname, mode='a', libver='latest', dtype='float16'):
     """
     Write similarity matrix into HDF5 file
 
@@ -28,6 +28,7 @@ def write_dict(dict_, fname, mode='a', libver='latest'):
     :param fname: file name
     :param mode: file mode (default ``'a'`` -- write into file)
     :param libver: use latest version of HDF5 file format
+    :param dtype: type for similarity matrix
     """
     with h5py.File(fname, mode=mode, libver=libver) as f:
         f.attrs['file_format_stretch'] = 'yam'
@@ -43,8 +44,9 @@ def write_dict(dict_, fname, mode='a', libver='latest'):
             if 'time' in key:
                 val = str(val)
             group.attrs[key] = val
+        group.create_dataset('sim_mat', data=dict_['sim_mat'], dtype=dtype)
         for key, val in dict_.items():
-            if key not in ('attrs', ):
+            if key not in ('attrs', 'sim_mat'):
                 group.create_dataset(key, data=val)
 
 
@@ -130,3 +132,10 @@ def _iter_h5(io, key, level=3):
     iter_ = _iter_dicts if is_stretch else _iter_streams
     for obj in iter_(fname, key, level=level):
         yield obj
+
+
+def _write_corr(result, io, dtype=None):
+    """Write result from yam.correlate.correlate"""
+    if result is not None:
+        for key in result:
+            result[key].write(io[key], 'H5', dtype=dtype, mode='a')
