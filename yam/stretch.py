@@ -60,8 +60,7 @@ def _index_sorted(l1, l2):
     return index
 
 def _update_result(res):
-    dim1 = len(res['times'])
-    dim3 = len(res['lag_time_windows'])
+    dim1, _, dim3 = res['sim_mat'].shape
     dtype = res['sim_mat'].dtype
     res['velchange_vs_time'] = np.empty((dim1, dim3), dtype=dtype)
     res['corr_vs_time'] = np.empty((dim1, dim3), dtype=dtype)
