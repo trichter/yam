@@ -21,12 +21,15 @@ class TestCase(unittest.TestCase):
         h['location1'] = h['location2'] = ''
         h['channel1'] = h['channel2'] = h['location'] = h['channel'] = 'HHZ'
         h['dist'] = h['azi'] = h['baz'] = 0
-        vel_changes = [0, -1, 1]
+        vel_changes = [0, 1, -1]
         traces = []
         dt = 24 * 3600
         t0 = UTC()
         for i, v in enumerate(vel_changes):
             mul = 1 + v / 100
+            # there is a small difference, because the routines from MIIC
+            # use the following approximation for stretching:
+            # mul = np.exp(v / 100)
             t = np.linspace(-10 * mul, 10 * mul, 10001)
             data = np.cos(2 * np.pi * t)
             h['starttime'] = t0 + i * dt
@@ -35,10 +38,11 @@ class TestCase(unittest.TestCase):
         d = stretch(Stream(traces), reftr=traces[0], str_range=1.1,
                     nstr=2201,
                     time_windows=[[1], 4], sides='both')
-        # TODO: check where the small deviation comes from
-        np.testing.assert_allclose(d['velchange_vs_time'],
-                                   np.array(vel_changes)[:, np.newaxis],
-                                   atol=0.008)
+        expect = np.array(vel_changes)[:, np.newaxis]
+        np.testing.assert_allclose(d['velchange_vs_time'], expect, atol=0.008)
+        # routine from miic uses approximation exp(dv/v) = 1 + dv/v
+        corrected = -np.log(d['velchange_vs_time'] / -100 + 1) * 100
+        np.testing.assert_allclose(corrected, expect, rtol=1e-4)
         # test writing and reading
         with tempfile.TemporaryDirectory(prefix='yam_') as tmpdir:
             fname = os.path.join(tmpdir, 'stretch.h5')
