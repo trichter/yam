@@ -56,6 +56,7 @@ def _add_value(x, tl, value=None, masked=False, single_value=True):
     dx = np.median(np.diff(x))
     keys = sorted(tl.keys())
     xs = np.split(x, [i + 1 for i in keys], axis=-1)
+    dtype = xs[0].dtype
     xf = [xs[0]]
     for i, x in enumerate(xs[1:]):
         if single_value:
@@ -72,7 +73,7 @@ def _add_value(x, tl, value=None, masked=False, single_value=True):
                 raise NotImplementedError
             xfn = xf[-1][-1] + dx
         else:
-            xfn = np.ones(shape) * value
+            xfn = np.ones(shape, dtype=dtype) * value
         if masked:
             xfn = np.ma.masked_all_like(xfn)
         xf.append(xfn)
@@ -285,7 +286,6 @@ def plot_sim_mat(res, bname=None, figsize=(10, 5), ext='.png',
             continue
         fig = plt.figure(figsize=figsize)
         ax = fig.add_subplot(111)
-        np.transpose(res['sim_mat'][:, :, itw])
         data = np.transpose(res['sim_mat'][:, :, itw])
         x = [UTC(t) for t in res['times']]
         no_data = _get_times_no_data(x)
