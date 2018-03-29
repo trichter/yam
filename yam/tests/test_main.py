@@ -128,12 +128,13 @@ class TestCase(unittest.TestCase):
             '{"clip_factor":2, "clip_set_zero":true},"remove_response":true,')
         self.out('-c conf2.json print prepdata CX.PATCX..BHZ 2010-02-05 1a')
 
-        try:
-            self.out('plot stations')  # takes long
-        except ImportError:
-            pass
-        else:
-            self.checkplot('stations.png')
+        # comment until ObsPy issue 2097 is fixed
+#        try:
+#            self.out('plot stations')  # takes long
+#        except ImportError:
+#            pass
+#        else:
+#            self.checkplot('stations.png')
         self.out('plot data CX.PATCX..BHZ 2010-02-05')
         self.checkplot('data_CX.PATCX..BHZ_2010-02-05.png')
         self.out('plot prepdata CX.PATCX..BHZ 2010-02-05 1')
@@ -191,8 +192,8 @@ def get_data(starttime, endtime, **smeta):
         self.assertEqual(cauto_info, cauto_info_seq)
 
         # check plots of correlation
-        po = ('--plot-options {"trim":[0,10],"figsize":[10,10],'
-                              '"time_period":[null,"2010-02-05"]}')
+        po = ('--plot-options {"xlim":[0,10],"figsize":[10,10],'
+                              '"ylim":[null,"2010-02-05"]}')
         self.out('plot c1_s1d --plottype vs_dist')
         self.checkplot('corr_vs_dist_c1_s1d_ZZ.png')
         self.out('plot c1_s1d/CX.PATCX-CX.PB06 --plottype wiggle')
@@ -224,7 +225,7 @@ def get_data(starttime, endtime, **smeta):
 
         # check stretching
         po = ('--plot-options {"show_line":true,'
-                              '"time_period":[null,"2010-02-05"]}')
+                              '"xlim":[null,"2010-02-05"]}')
         self.out('stretch c1_s1d/CX.PATCX-CX.PATCX 1')
         self.out("stack c1_s1d None")
         self.out('stretch c1_s1d 1 --reftrid c1_s1d_s')

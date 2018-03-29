@@ -9,8 +9,8 @@ Common arguments in plotting functions are:
 :b/fname: file or base name for the plot output
 :ext: file name extension (e.g. ``'.png'``)
 :figsize: figure size (tuple of inches)
-:trim: trim correlations around zero offset (tuple, e.g. ``(-30, 30)``)
-:time_period: show correlations only from this time span (tuple of dates)
+:xlim: limits of x axis (tuple of lag times or tuple of UTC strings)
+:ylim: limits of y axis (tuple of UTC strings or tuple of percentages)
 :line_style: style of a wiggle plot, see |Axes.plot| in matplotlib's documentation
 :line_width: line width of wiggle plot
 
@@ -117,7 +117,7 @@ def plot_data(data, fname, ext='.png', show=False,
 def plot_corr_vs_dist(
         stream, fname, figsize=(10, 5), ext='.png',
         components='ZZ', line_style='k', scale=1, dist_unit='km',
-        trim=None, time_period=None):
+        xlim=None, ylim=None, time_period=None):
     """
     Plot stacked correlations versus inter-station distance
 
@@ -129,6 +129,7 @@ def plot_corr_vs_dist(
     :param components: component combination to plot
     :param scale: scale wiggles (default 1)
     :param dist_unit: one of ``('km', 'm', 'deg')``
+    :time_period: use correlations only from this time span (tuple of dates)
     """
     # scale relative to axis
     traces = [tr for tr in stream if
@@ -146,11 +147,12 @@ def plot_corr_vs_dist(
                   else 1000)
     max_dist = max(tr.stats.dist / dist_scale for tr in stack)
     for tr in stack:
-        lag_times = _trim(tr, trim)
+        lag_times = _trim(tr, xlim)
         scaled_data = tr.stats.dist / dist_scale + tr.data * max_dist * scale
         ax.plot(lag_times, scaled_data, line_style)
     fname = '%s_%s' % (fname, components)
     label = os.path.basename(fname)
+    ax.set_ylim(ylim)
     ax.annotate(label, (0, 1), (10, 10), 'axes fraction', 'offset points',
                 annotation_clip=False, va='bottom')
     ax.set_ylabel('distance (%s)' % dist_unit)
@@ -160,8 +162,8 @@ def plot_corr_vs_dist(
 
 def plot_corr_vs_time_wiggle(
         stream, fname, figsize=(10, 5), ext='.png',
-        line_style='k', scale=20, line_width=0.5,
-        trim=None, time_period=None):
+        xlim=None, ylim=None,
+        line_style='k', line_width=0.5, scale=20):
     """
     Plot correlation wiggles versus time
 
@@ -179,13 +181,13 @@ def plot_corr_vs_time_wiggle(
     if len(ids) != 1:
         warn('Different ids in stream: %s' % ids)
     stream.sort(['starttime'])
-    _trim_time_period(stream, time_period)
+    _trim_time_period(stream, ylim)
     times = [tr.stats.starttime.matplotlib_date for tr in stream]
     dt = np.median(np.diff(times))
     fig = plt.figure(figsize=figsize)
     ax = fig.add_subplot(111)
     for tr in stream:
-        lag_times = _trim(tr, trim)
+        lag_times = _trim(tr, xlim)
         scaled_data = tr.stats.starttime.matplotlib_date + tr.data * dt * scale
         ax.plot(lag_times, scaled_data, line_style, lw=line_width)
     label = os.path.basename(fname)
@@ -199,7 +201,7 @@ def plot_corr_vs_time_wiggle(
 
 def plot_corr_vs_time(
         stream, fname, figsize=(10, 5), ext='.png',
-        vmax=None, cmap='RdBu_r', trim=None, time_period=None,
+        xlim=None, ylim=None, vmax=None, cmap='RdBu_r',
         show_stack=True, line_style='k', line_width=1):
     """
     Plot correlations versus time
@@ -219,9 +221,9 @@ def plot_corr_vs_time(
     if len(ids) != 1:
         warn('Different ids in stream: %s' % ids)
     stream.sort(['starttime'])
-    _trim_time_period(stream, time_period)
+    _trim_time_period(stream, ylim)
     for tr in stream:
-        lag_times = _trim(tr, trim)
+        lag_times = _trim(tr, xlim)
     times = [tr.stats.starttime.matplotlib_date for tr in stream]
     fig = plt.figure(figsize=figsize)
     ax = fig.add_axes([0.15, 0.1, 0.75, 0.75])
@@ -258,7 +260,7 @@ def plot_corr_vs_time(
 
 
 def plot_sim_mat(res, bname=None, figsize=(10, 5), ext='.png',
-                 vmax=None, time_period=None, ylim=None, cmap='hot_r',
+                 xlim=None, ylim=None, vmax=None, cmap='hot_r',
                  show_line=False, line_style='b', line_width=2,
                  time_window=None):
     """
@@ -271,13 +273,10 @@ def plot_sim_mat(res, bname=None, figsize=(10, 5), ext='.png',
 
     :param res: dictionary with stretching results
     :param vmax: maximum value in colormap
-    :param ylim: set display limit of velocity variations (tuple of percents)
     :param cmap: used colormap
     :param show_line: show line connecting best correlations for each time
-    :param time_window: do not create figures for each time window in the results
-        dictionary, but only for one time window with given index
-
-
+    :param time_window: do not create figures for each time window in the
+        results dictionary, but only for one time window with given index
     """
     labelexpr = '{}_tw{:02d}_{:05.1f}s-{:05.1f}s'
     figs = []
@@ -314,7 +313,7 @@ def plot_sim_mat(res, bname=None, figsize=(10, 5), ext='.png',
             if isinstance(ylim, (float, int)):
                 ylim = (-ylim, ylim)
             ax.set_ylim(ylim)
-        t0, t1 = (None, None) if time_period is None else time_period
+        t0, t1 = (None, None) if xlim is None else xlim
         t0 = x2[0] if t0 is None else UTC(t0).matplotlib_date
         t1 = x2[-1] if t1 is None else UTC(t1).matplotlib_date
         ax.set_xlim(t0, t1)
