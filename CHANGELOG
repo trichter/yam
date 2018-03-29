@@ -1,3 +1,11 @@
+v0.4.0:
+  * rename plotting options setting x- and y-limits to xlim and ylim
+  * parallel processing for stretching, reference trace must be used (--reftr)
+  * allow full stack with '' or 'all' (e.g. for creating a refence trace)
+  * parallel processing for full stack
+  * store correlations and sim_mat as half precission float16 by default
+  * fix various small bugs
+  * move some functions to new io module
 v0.3.0:
   * add scan subcommand
   * add debug option (--pdb)
