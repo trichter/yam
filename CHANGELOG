@@ -1,3 +1,5 @@
+v0.4.1:
+  * extension of images is now specified without dot, e.g. 'png', 'pdf'
 v0.4.0:
   * rename plotting options setting x- and y-limits to xlim and ylim
   * parallel processing for stretching, reference trace must be used (--reftr)
