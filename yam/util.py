@@ -143,21 +143,22 @@ def create_config(conf='conf.json', tutorial=False, less_data=False):
             channel_priorities=["BH[ZN]"], chunklength_in_sec=86400,
             reject_channels_with_gaps=False, minimum_length=0.5)
         mdl = MassDownloader(providers=['GFZ'])
-        mdl.download(domain, restrictions, template, station_template)
-        mdl = MassDownloader(providers=['GFZ'])
+        kw = dict(threads_per_client=1, download_chunk_size_in_mb=200)
+        mdl.download(domain, restrictions, template, station_template,  **kw)
         restrictions.station = 'PB06'
         if not less_data:
             restrictions.endtime = UTC('2010-02-12')
-        mdl.download(domain, restrictions, template, station_template)
+        mdl.download(domain, restrictions, template, station_template,  **kw)
         restrictions.station = 'PB01'
         restrictions.endtime = UTC('2010-02-04 08:00:00')
         restrictions.channel_priorities = ["BHZ"]
-        mdl.download(domain, restrictions, template, station_template)
+        mdl.download(domain, restrictions, template, station_template,  **kw)
         if not less_data:
             restrictions.starttime = UTC('2010-02-08 00:00:00')
             restrictions.endtime = UTC('2010-02-09 23:55:00')
             restrictions.channel_priorities = ["BHZ"]
-            mdl.download(domain, restrictions, template, station_template)
+            mdl.download(domain, restrictions, template, station_template,
+                         **kw)
     if tutorial:
         dest_dir = os.path.dirname(conf)
         dest_dir_data = os.path.join(dest_dir, 'example_data')
