@@ -14,7 +14,8 @@ from obspy.signal.cross_correlation import correlate as obscorr
 from scipy.fftpack import fft, ifft, fftshift, ifftshift, next_fast_len
 from scipy.signal import freqz, iirfilter, hilbert
 
-from yam.util import _filter, IterTime, smooth as smooth_func, _time2sec
+from yam.util import (_filter, IterTime, smooth as smooth_func, _time2sec,
+                      YamError)
 import yam.stack
 
 
@@ -464,6 +465,10 @@ def _slide_and_correlate_traces(day, next_day, length, overlap, discard,
     return xstream
 
 
+def _midtime(stats):
+    return stats.starttime + 0.5 * (stats.endtime - stats.starttime)
+
+
 def correlate(io, day, outkey,
               edge=60,
               length=3600, overlap=1800,
@@ -563,10 +568,17 @@ def correlate(io, day, outkey,
             continue
         stream1 = Stream([tr for tr in stream if tr.id[:-1] == station1])
         stream2 = Stream([tr for tr in stream if tr.id[:-1] == station2])
-        c1 = inventory.get_coordinates(
-            stream1[0].id, datetime=stream1[0].stats.endtime)
-        c2 = inventory.get_coordinates(
-            stream2[0].id, datetime=stream2[0].stats.endtime)
+        datetime1 = _midtime(stream1[0].stats)
+        datetime2 = _midtime(stream2[0].stats)
+        msg = 'Cannot get coordinates for channel %s datetime %s'
+        try:
+            c1 = inventory.get_coordinates(stream1[0].id, datetime=datetime1)
+        except Exception as ex:
+            raise RuntimeError(msg % (stream1[0].id, datetime1)) from ex
+        try:
+            c2 = inventory.get_coordinates(stream2[0].id, datetime=datetime2)
+        except Exception as ex:
+            raise RuntimeError(msg % (stream2[0].id, datetime2)) from ex
         args = (c1['latitude'], c1['longitude'],
                 c2['latitude'], c2['longitude'])
         dist, azi, baz = gps2dist_azimuth(*args)
