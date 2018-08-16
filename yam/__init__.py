@@ -187,8 +187,8 @@ More information about the different subcommands of yam can be found in the corr
 .. |Stream| replace:: `~obspy.core.stream.Stream`
 .. |Stream.plot| replace:: `Stream.plot() <obspy.core.stream.Stream.plot>`
 .. |Inventory| replace:: `~obspy.core.inventory.inventory.Inventory`
-.. |Inventory.plot| replace:: `Invenory.plot() <obspy.core.inventory.inventory.Inventory.plot>`
-.. |Inventory.select| replace:: `Invenory.filter() <obspy.core.inventory.inventory.Inventory.select>`
+.. |Inventory.plot| replace:: `Inventory.plot() <obspy.core.inventory.inventory.Inventory.plot>`
+.. |Inventory.select| replace:: `Inventory.filter() <obspy.core.inventory.inventory.Inventory.select>`
 .. |Axes.plot| replace:: `Axes.plot() <matplotlib.axes.Axes.plot>`
 
 .. |io| replace:: io configuration dictionary
