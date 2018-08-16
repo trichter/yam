@@ -9,6 +9,7 @@ Common arguments in plotting functions are:
 :b/fname: file or base name for the plot output
 :ext: file name extension (e.g. ``'png'``, ``'pdf'``)
 :figsize: figure size (tuple of inches)
+:dpi: resolution of image file (not available for station plot)
 :xlim: limits of x axis (tuple of lag times or tuple of UTC strings)
 :ylim: limits of y axis (tuple of UTC strings or tuple of percentages)
 :line_style: style of a wiggle plot, see |Axes.plot| in matplotlib's documentation
@@ -115,7 +116,7 @@ def plot_data(data, fname, ext='png', show=False,
 
 
 def plot_corr_vs_dist(
-        stream, fname, figsize=(10, 5), ext='png',
+        stream, fname, figsize=(10, 5), ext='png', dpi=None,
         components='ZZ', line_style='k', scale=1, dist_unit='km',
         xlim=None, ylim=None, time_period=None):
     """
@@ -157,11 +158,11 @@ def plot_corr_vs_dist(
                 annotation_clip=False, va='bottom')
     ax.set_ylabel('distance (%s)' % dist_unit)
     ax.set_xlabel('time (s)')
-    fig.savefig(fname + '.' + ext)
+    fig.savefig(fname + '.' + ext, dpi=dpi)
 
 
 def plot_corr_vs_time_wiggle(
-        stream, fname, figsize=(10, 5), ext='png',
+        stream, fname, figsize=(10, 5), ext='png', dpi=None,
         xlim=None, ylim=None,
         line_style='k', line_width=0.5, scale=20):
     """
@@ -196,11 +197,11 @@ def plot_corr_vs_time_wiggle(
     ax.set_ylabel('date')
     ax.set_xlabel('time (s)')
     ax.yaxis_date()
-    fig.savefig(fname + '.' + ext)
+    fig.savefig(fname + '.' + ext, dpi=dpi)
 
 
 def plot_corr_vs_time(
-        stream, fname, figsize=(10, 5), ext='png',
+        stream, fname, figsize=(10, 5), ext='png', dpi=None,
         xlim=None, ylim=None, vmax=None, cmap='RdBu_r',
         show_stack=True, line_style='k', line_width=1):
     """
@@ -256,10 +257,10 @@ def plot_corr_vs_time(
     label = os.path.basename(fname)
     ax_ano.annotate(label, (0, 1), (10, 10), 'axes fraction', 'offset points',
                     annotation_clip=False, va='bottom')
-    fig.savefig(fname + '.' + ext)
+    fig.savefig(fname + '.' + ext, dpi=dpi)
 
 
-def plot_sim_mat(res, bname=None, figsize=(10, 5), ext='png',
+def plot_sim_mat(res, bname=None, figsize=(10, 5), ext='png', dpi=None,
                  xlim=None, ylim=None, vmax=None, cmap='hot_r',
                  show_line=False, line_style='b', line_width=2,
                  time_window=None):
@@ -318,7 +319,7 @@ def plot_sim_mat(res, bname=None, figsize=(10, 5), ext='png',
         t1 = x2[-1] if t1 is None else UTC(t1).matplotlib_date
         ax.set_xlim(t0, t1)
         if bname is not None:
-            fig.savefig(fname + '.' + ext)
+            fig.savefig(fname + '.' + ext, dpi=dpi)
         figs.append(fig)
     if time_window is None:
         return figs

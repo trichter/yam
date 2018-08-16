@@ -1,4 +1,5 @@
 def:
+  * add dpi option for most plots to set resolution of saved images
   * more verbose error message if coordinates of station cannot be found
 v0.4.2:
   * adapt to GFZ FDSN webservices and allow only 1 thread when downloading example data
