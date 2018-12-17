@@ -37,7 +37,7 @@ Optional dependencies are ``IPython`` and ``cartopy``.
 The recommended way to install yam is via `anaconda <https://docs.anaconda.com/anaconda/install.html>`_ and pip::
 
     conda --add channels conda-forge
-    conda create -n yam python=3 obspy h5py cartopy IPython
+    conda create -n yam cartopy h5py IPython matplotlib numpy obspy scipy tqdm
     source activate yam
     pip install yam
 
