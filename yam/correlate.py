@@ -53,8 +53,8 @@ def _fill_array(data, mask=None, fill_value=None):
     return data
 
 
-def time_norm(data, method, clip_factor=1, clip_set_zero=False,
-              mute_parts=48, mute_factor=2):
+def time_norm(data, method, sr, clip_factor=1, clip_set_zero=False,
+              mute_parts=48, mute_factor=2, median_window=None):
     """
     Calculate normalized data, see e.g. Bensen et al. (2007)
 
@@ -64,6 +64,7 @@ def time_norm(data, method, clip_factor=1, clip_set_zero=False,
         clip: clip data to the root mean square (rms)\n
         mute_envelope: calculate envelope and set data to zero where envelope
         is larger than specified
+        remove_median: remove (rolling) median from data
     :param float clip_factor: multiply std with this value before cliping
     :param bool clip_mask: instead of clipping, set the values to zero
     :param int mute_parts: mean of the envelope is calculated by dividing the
@@ -71,6 +72,8 @@ def time_norm(data, method, clip_factor=1, clip_set_zero=False,
         the median of this averages defines the mean envelope
     :param float mute_factor: mean of envelope multiplied by this
         factor defines the level for muting
+    :param float median_window: length of rolling window in seconds for
+        removing the median (None -> no rolling window)
 
     :return: normalized data
     """
@@ -86,6 +89,15 @@ def time_norm(data, method, clip_factor=1, clip_set_zero=False,
         else:
             args = (-clip_factor * std, clip_factor * std)
             np.clip(data, *args, out=data)
+    elif method == 'remove_median':
+        if median_window is None:
+            data -= np.median(data)
+        else:
+            N = int(round(median_window * sr))
+            idx = np.arange(N) + np.arange(len(data))[:,None] - N // 2
+            idx[idx>=N] = 2*N - idx[idx>=N] - 1
+            idx[idx<N] = -idx[idx<N]
+            data -= np.median(data[idx],axis=1)
     elif method == 'mute_envelope':
         N = next_fast_len(len(data))
         envelope = np.abs(hilbert(data, N))[:len(data)]
@@ -329,7 +341,8 @@ def _prep2(normalization, time_norm_options, spectral_whitening_options,
             tr.data = spectral_whitening(tr.data, sr=sr,
                                          **spectral_whitening_options)
         else:
-            tr.data = time_norm(tr.data, norm, **time_norm_options)
+            tr.data = time_norm(tr.data, norm, tr.stats.sampling_rate,
+                                **time_norm_options)
     if decimate:
         mask = np.ma.getmask(tr.data)
         tr.decimate(decimate, no_filter=True)
