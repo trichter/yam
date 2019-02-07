@@ -1,6 +1,9 @@
 dev:
+  * add demean option (before filtering)
+  * add remove_median timenorm option (useful for no filtering), rolling median possible
   * add dpi option for most plots to set resolution of saved images
   * more verbose error message if coordinates of station cannot be found
+  * fix: guarantee same length of traces which are correlated (if tolerance_shift is set)
 v0.4.2:
   * adapt to GFZ FDSN webservices and allow only 1 thread when downloading example data
 v0.4.1:
