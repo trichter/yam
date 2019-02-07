@@ -35,23 +35,24 @@ class TestCase(unittest.TestCase):
         stream.filter('highpass', freq=0.5)
         data1 = stream[0].data  # unmasked
         t = stream[0].stats.starttime
+        sr = stream[0].stats.sampling_rate
         stream.cutout(t + 18, t + 20)
         stream.merge()
         data2 = stream[0].data  # array with masked data
         mask = data2.mask
 
-        data1_1bit = time_norm(np.copy(data1), '1bit')
-        data2_1bit = time_norm(np.ma.copy(data2), '1bit')
+        data1_1bit = time_norm(np.copy(data1), '1bit', sr)
+        data2_1bit = time_norm(np.ma.copy(data2), '1bit', sr)
         self.assertSetEqual(set(data1_1bit), {-1., 0., 1.})
         self.assertSetEqual(set(data2_1bit._data), {-1., 0., 1.})
         np.testing.assert_equal(data2_1bit.mask, mask)
         np.testing.assert_equal(data2_1bit._data[mask], 0.)
 
-        data1_clip = time_norm(np.copy(data1), 'clip', clip_factor=2)
-        data2_clip = time_norm(np.ma.copy(data2), 'clip', clip_factor=2)
-        data1_clip0 = time_norm(np.copy(data1), 'clip', clip_factor=2,
+        data1_clip = time_norm(np.copy(data1), 'clip', sr, clip_factor=2)
+        data2_clip = time_norm(np.ma.copy(data2), 'clip', sr, clip_factor=2)
+        data1_clip0 = time_norm(np.copy(data1), 'clip', sr, clip_factor=2,
                                 clip_set_zero=True)
-        data2_clip0 = time_norm(np.ma.copy(data2), 'clip', clip_factor=2,
+        data2_clip0 = time_norm(np.ma.copy(data2), 'clip', sr, clip_factor=2,
                                 clip_set_zero=True)
         clip_mask = np.abs(data1_clip) < np.abs(data1)
         with np.errstate(invalid='ignore'):
@@ -65,19 +66,28 @@ class TestCase(unittest.TestCase):
         np.testing.assert_array_less(np.abs(data2_clip[clip_mask2]),
                                      np.abs(data2[clip_mask2]))
 
-        data1_mute_envelope = time_norm(np.copy(data1), 'mute_envelope',
-                                        mute_parts=4)
-        data2_mute_envelope = time_norm(np.ma.copy(data2), 'mute_envelope',
-                                        mute_parts=4)
+        data1_me = time_norm(np.copy(data1), 'mute_envelope', sr, mute_parts=4)
+        data2_me = time_norm(np.ma.copy(data2), 'mute_envelope', sr,
+                             mute_parts=4)
         ind = np.abs(data1) > 0.5 * np.max(data1)
-        np.testing.assert_equal(data1_mute_envelope[ind], 0.)
-        np.testing.assert_equal(data2_mute_envelope[ind], 0.)
+        np.testing.assert_equal(data1_me[ind], 0.)
+        np.testing.assert_equal(data2_me[ind], 0.)
+
+        data1_rm = time_norm(np.copy(data1), 'remove_median', sr)
+        data1b_rm = time_norm(np.ma.copy(data1), 'remove_median', sr,
+                              median_window=10)
+        with np.warnings.catch_warnings():
+            msg = 'Invalid value encountered in median'
+            np.warnings.filterwarnings('ignore', msg)
+            data2_rm = time_norm(np.copy(data2), 'remove_median', sr)
+        self.assertGreater(np.sum(data1**2), np.sum(data1_rm**2))
+#        self.assertGreater(np.sum(data1**2), np.sum(data1b_rm**2))
+#        self.assertGreater(np.sum(data2**2), np.sum(data2_rm**2))
 
     def test_spectral_whitening(self):
         stream = read().select(component='Z')
         filter_ = [0.5, 10]
         stream.filter('highpass', freq=0.5)
-        times = stream[0].times()
         sr = stream[0].stats.sampling_rate
         data1 = np.copy(stream[0].data)  # unmasked
         t = stream[0].stats.starttime
@@ -86,8 +96,8 @@ class TestCase(unittest.TestCase):
         data2 = stream[0].data  # array with masked data
         mask = data2.mask
 
-        data1 = time_norm(data1, 'mute_envelope', mute_parts=4)
-        data2 = time_norm(data2, 'mute_envelope', mute_parts=4)
+        data1 = time_norm(data1, 'mute_envelope', sr, mute_parts=4)
+        data2 = time_norm(data2, 'mute_envelope', sr, mute_parts=4)
 
         wdata1 = spectral_whitening(np.copy(data1))
         wdata1_f = spectral_whitening(np.copy(data1), sr=sr, filter=filter_)
@@ -278,7 +288,8 @@ class TestCase(unittest.TestCase):
         tr.stats.sampling_rate = 50.
         stream = stream.cutout(day + 0.01, day + 10)
         stream = stream.cutout(day + 14, day + 16.05)
-        norm = ('clip', 'spectral_whitening', 'mute_envelope', '1bit')
+        norm = ('clip', 'spectral_whitening', 'mute_envelope',
+                'remove_median', '1bit')
         # see https://docs.scipy.org/doc/numpy-1.13.0/release.html#
         # assigning-to-slices-views-of-maskedarray
         ignore_msg = r'setting an item on a masked array which has a shared'

@@ -90,14 +90,20 @@ def time_norm(data, method, sr, clip_factor=1, clip_set_zero=False,
             args = (-clip_factor * std, clip_factor * std)
             np.clip(data, *args, out=data)
     elif method == 'remove_median':
-        if median_window is None:
-            data -= np.median(data)
-        else:
-            N = int(round(median_window * sr))
-            idx = np.arange(N) + np.arange(len(data))[:,None] - N // 2
-            idx[idx>=N] = 2*N - idx[idx>=N] - 1
-            idx[idx<N] = -idx[idx<N]
-            data -= np.median(data[idx],axis=1)
+        with np.warnings.catch_warnings():
+            # see https://github.com/numpy/numpy/issues/7330
+            # median does ignore masks
+            msg = ("Warning: 'partition' will ignore the 'mask' of the "
+                   "MaskedArray.")
+            np.warnings.filterwarnings('ignore', msg)
+            if median_window is None:
+                data -= np.median(data)
+            else:
+                N = int(round(median_window * sr))
+                idx = np.arange(N) + np.arange(len(data))[:,None] - N // 2
+                idx[idx>=N] = 2*N - idx[idx>=N] - 1
+                idx[idx<N] = -idx[idx<N]
+                data -= np.median(data[idx],axis=1)
     elif method == 'mute_envelope':
         N = next_fast_len(len(data))
         envelope = np.abs(hilbert(data, N))[:len(data)]
