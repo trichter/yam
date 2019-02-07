@@ -9,6 +9,7 @@ from scipy.signal import periodogram
 from scipy.fftpack import next_fast_len
 
 from yam.correlate import (_fill_array, _downsample_and_shift,
+                           _make_same_length,
                            correlate as yam_correlate,
                            correlate_traces, preprocess, spectral_whitening,
                            time_norm)
@@ -373,6 +374,20 @@ class TestCase(unittest.TestCase):
                   component_combinations=('NT', 'NR'), discard=0.0,
                   keep_correlations=True)
         self.assertEqual(res, None)
+
+
+    def _test_make_same_length(self):
+        tr1 = read()[0]
+        tr1.stats.sampling_rate = 1
+        utc = tr1.stats.starttime
+        tr2 = tr1.copy()
+        tr2.stats.starttime -= 0.1
+        for dt in np.linspace(0, 1, 101):
+            tr1a = tr1.slice(utc + dt, utc + 3.7 + dt)
+            tr2a = tr2.slice(utc + dt, utc + 3.7 + dt)
+            _make_same_length(tr1a, tr2a)
+            self.assertEqual(len(tr1a), len(tr2a))
+            self.asertLess(tr1a.stats.starttime - tr2a.stats.starttime, 0.5)
 
 
 def suite():

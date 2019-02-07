@@ -429,14 +429,41 @@ def correlate_traces(tr1, tr2, maxshift=3600):
     return obspy.Trace(data=xdata, header=header)
 
 
+def _make_same_length(tr1, tr2):
+    """Guarantee that tr1 and tr2 have the same length.
+
+    Even if tr1 and tr2 have the same sampling rate and are trimmed with
+    the same times, they could differ in length up to one sample.
+    This is handled here.
+    """
+    dlen = len(tr2) - len(tr1)
+    dt = tr1.stats.delta
+    if dlen == -1:
+        tr1, tr2 = tr2, tr1
+    if abs(dlen) == 1:
+        # tr2 is too long
+        if tr1.stats.starttime - tr2.stats.starttime > dt / 2:
+            tr2.data = tr2.data[1:]
+            tr2.stats.starttime += dt
+        else:
+            tr2.data = tr2.data[:-1]
+    elif abs(dlen) > 1:
+        msg = 'This should not happen ;), traces have different length'
+        raise ValueError(msg)
+
+
 def _slide_and_correlate_traces(day, next_day, length, overlap, discard,
                                 max_lag, outkey,
                                 task):
     """Helper function for parallel correlating"""
     tr1, tr2, dist, azi, baz = task
+    sr = tr1.stats.sampling_rate
+    sr2 = tr2.stats.sampling_rate
+    if sr != sr2:
+        msg = 'Traces have different sampling rate (%s != %s)' % (sr, sr2)
+        raise ValueError(msg)
     xstream = obspy.Stream()
-    for t1 in IterTime(day, next_day - length + overlap,
-                       dt=length - overlap):
+    for t1 in IterTime(day, next_day - length + overlap, dt=length - overlap):
         sub = obspy.Stream([tr1, tr2]).slice(t1, t1 + length)
         if len(sub) < 2:
             continue
@@ -445,10 +472,10 @@ def _slide_and_correlate_traces(day, next_day, length, overlap, discard,
         if max(st) > min(et):  # this should not happen
             continue
         sub.trim(max(st), min(et))
+        _make_same_length(sub[0], sub[1])
         if discard:
             avail = min((tr.data.count() if hasattr(tr.data, 'count')
-                         else len(tr)) / tr.stats.sampling_rate / length
-                        for tr in sub)
+                         else len(tr)) / sr / length for tr in sub)
             if avail < discard:
                 msg = ('discard trace combination %s-%s for time %s '
                        '(availability %.1f%% < %.1f%% desired)')
