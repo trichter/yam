@@ -5,6 +5,7 @@ import glob
 import logging
 import multiprocessing
 import os
+import re
 import shutil
 import textwrap
 
@@ -327,12 +328,7 @@ def _get_data_glob(data):
     """
     Construct a glob expression from the data expression
     """
-    from obspy import UTCDateTime as UTC
-    kw = dict(network='*', station='*', location='*', channel='*',
-              t=UTC('2211-11-11 11:11:11'))
-    dataglob = data.format(**kw)
-    dataglob = dataglob.replace('22', '*').replace('11', '*')
-    return dataglob
+    return re.sub(r'{[^{}]*}', '*', data)
 
 
 def _get_data_files(data):
