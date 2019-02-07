@@ -471,8 +471,9 @@ def load(io, key, seedid=None, day=None, do='return', prep_kw={},
             raise ParseError(msg)
         if key == 'prepdata':
             prep_keys = ('remove_response', 'remove_response_options',
-                         'filter', 'normalization',
+                         'demean', 'filter', 'normalization',
                          'time_norm_options', 'spectral_whitening_options',
+                         'tolerance_shift',
                          'downsample')
             prep_kw = {k: prep_kw.get(k) for k in prep_keys}
         obj = _load_data(seedid, day, io['data'], io.get('data_format'),

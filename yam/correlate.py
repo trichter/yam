@@ -302,7 +302,7 @@ def _downsample_and_shift(trace, target_sr=None, tolerance_shift=None,
 
 
 def _prep1(target_sr, tolerance_shift, interpolate_options,
-           remove_response, inventory, remove_response_options, filter,
+           remove_response, inventory, remove_response_options, demean, filter,
            tr):
     """Helper function for parallel preprocessing"""
     tr.data = tr.data.astype('float64')
@@ -311,6 +311,8 @@ def _prep1(target_sr, tolerance_shift, interpolate_options,
                           interpolate_options=interpolate_options)
     if remove_response:
         tr.remove_response(inventory, **remove_response_options)
+    if demean:
+         tr.detrend('demean')
     if filter is not None:
         _filter(tr, filter)
     return tr
@@ -341,6 +343,7 @@ def preprocess(stream, day=None, inventory=None,
                overlap=0,
                remove_response=False,
                remove_response_options=None,
+               demean=True,
                filter=None,
                normalization=(),
                time_norm_options=None,
@@ -389,7 +392,7 @@ def preprocess(stream, day=None, inventory=None,
     # call _prep1 on all traces, merge stream and call _prep2 on all traces
     do_work = partial(_prep1, downsample, tolerance_shift, interpolate_options,
                       remove_response, inventory, remove_response_options,
-                      filter)
+                      demean, filter)
     stream.traces = start_parallel_jobs_inner_loop(stream, do_work, njobs)
     len1 = len(stream)
     stream.merge()
