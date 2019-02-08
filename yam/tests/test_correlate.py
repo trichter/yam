@@ -77,19 +77,6 @@ class TestCase(unittest.TestCase):
         np.testing.assert_equal(data1_me[ind], 0.)
         np.testing.assert_equal(data2_me[ind], 0.)
 
-        data1_rm = time_norm(np.copy(data1), 'remove_median', sr)
-        data1b_rm = time_norm(np.ma.copy(data1), 'remove_median', sr,
-                              median_window=10)
-        with np.warnings.catch_warnings():
-            msg = 'Invalid value encountered in median'
-            np.warnings.filterwarnings('ignore', msg)
-            data2_rm = time_norm(np.copy(data2), 'remove_median', sr)
-        data2b_rm = time_norm(np.ma.copy(data1), 'remove_median', sr,
-                              median_window=10)
-        self.assertGreater(np.sum(data1**2), np.sum(data1_rm**2))
-        self.assertGreater(np.sum(data1**2), np.sum(data1b_rm**2))
-#        self.assertGreater(np.sum(data2**2), np.sum(data2_rm**2))
-#        self.assertGreater(np.sum(data2**2), np.sum(data2b_rm**2))
 
     def test_spectral_whitening(self):
         stream = read().select(component='Z')
@@ -295,8 +282,7 @@ class TestCase(unittest.TestCase):
         tr.stats.sampling_rate = 50.
         stream = stream.cutout(day + 0.01, day + 10)
         stream = stream.cutout(day + 14, day + 16.05)
-        norm = ('clip', 'spectral_whitening', 'mute_envelope',
-                'remove_median', '1bit')
+        norm = ('clip', 'spectral_whitening', 'mute_envelope', '1bit')
         # see https://docs.scipy.org/doc/numpy-1.13.0/release.html#
         # assigning-to-slices-views-of-maskedarray
         ignore_msg = r'setting an item on a masked array which has a shared'

@@ -55,7 +55,8 @@ def _fill_array(data, mask=None, fill_value=None):
 def time_norm(data, method, sr,
               clip_factor=None, clip_set_zero=None,
               clip_value=2, clip_std=True, clip_mode='clip',
-              mute_parts=48, mute_factor=2, median_window=None):
+              mute_parts=48, mute_factor=2, plugin=None,
+              plugin_options={}):
     """
     Calculate normalized data, see e.g. Bensen et al. (2007)
 
@@ -65,8 +66,7 @@ def time_norm(data, method, sr,
         clip: clip data to value or multiple of root mean square (rms)\n
         mute_envelope: calculate envelope and set data to zero where envelope
         is larger than specified
-        remove_median: remove (rolling) median from data, useful for removeing
-        the baseline if data was not filtered beforehand.
+        plugin: use own function
     :param mask_zeros: mask values that are set to zero, they will stay zero
         in the further processing
     :param float clip_value: value for clipping or list of lower and upper
@@ -81,8 +81,8 @@ def time_norm(data, method, sr,
         the median of this averages defines the mean envelope
     :param float mute_factor: mean of envelope multiplied by this
         factor defines the level for muting
-    :param float median_window: length of rolling window in seconds for
-        removing the median (None -> no rolling window)
+    :param str plugin: function in the form module:func
+    :param dict plugin_options: kwargs passed to plugin
 
     :return: normalized data
     """
@@ -117,26 +117,17 @@ def time_norm(data, method, sr,
                 data[np.logical_or(*args)] = 0
             else:
                 raise ValueError('clip_mode must be one of clip, zeros, mask')
-    elif method == 'remove_median':
-        with np.warnings.catch_warnings():
-            # see https://github.com/numpy/numpy/issues/7330
-            # median does ignore masks
-            if median_window is None:
-                msg = ("Warning: 'partition' will ignore the 'mask' of the "
-                       "MaskedArray.")
-                np.warnings.filterwarnings('ignore', msg)
-                data -= np.median(data)
-            else:
-                N = int(round(median_window * sr))
-                if N % 2 == 0:
-                    N = N + 1
-                data -= medfilt(data, N)
     elif method == 'mute_envelope':
         N = next_fast_len(len(data))
         envelope = np.abs(hilbert(data, N))[:len(data)]
         levels = [np.mean(d) for d in np.array_split(envelope, mute_parts)]
         level = mute_factor * np.median(levels)
         data[envelope > level] = 0
+    elif method == 'plugin':
+        from yam.util import _load_func
+        modulename, funcname = plugin.split(':')
+        func = _load_func(modulename.strip(), funcname.strip())
+        data = func(data, sr, **plugin_options)
     else:
         msg = 'The method passed to time_norm is not known: %s.' % method
         raise ValueError(msg)

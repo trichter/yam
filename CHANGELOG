@@ -1,6 +1,6 @@
 dev:
   * add demean option (before filtering)
-  * add remove_median timenorm option (useful for removing the baseline if data was not filtered), rolling median possible
+  * add plugin option for timenorm
   * refactor timenorm function, some kwargs are deprecated
   * add dpi option for most plots to set resolution of saved images
   * more verbose error message if coordinates of station cannot be found
