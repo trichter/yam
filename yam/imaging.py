@@ -110,9 +110,9 @@ def plot_data(data, fname, ext='png', show=False,
     :param type,\*\*kwargs: passed to |Stream.plot| method
     """
     label = os.path.basename(fname)
-    data.plot(type=type, outfile=fname + '.' + ext, title=label)
+    data.plot(type=type, outfile=fname + '.' + ext, title=label, **kwargs)
     if show:
-        data.plot(type=type, title=label, show=True)
+        data.plot(type=type, title=label, show=True, **kwargs)
 
 
 def plot_corr_vs_dist(

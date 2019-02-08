@@ -12,10 +12,9 @@ from obspy.core import Stream
 from obspy.geodetics import gps2dist_azimuth
 from obspy.signal.cross_correlation import correlate as obscorr
 from scipy.fftpack import fft, ifft, fftshift, ifftshift, next_fast_len
-from scipy.signal import freqz, iirfilter, hilbert
+from scipy.signal import freqz, iirfilter, hilbert, medfilt
 
-from yam.util import (_filter, IterTime, smooth as smooth_func, _time2sec,
-                      YamError)
+from yam.util import _filter, IterTime, smooth as smooth_func, _time2sec
 import yam.stack
 
 
@@ -53,7 +52,9 @@ def _fill_array(data, mask=None, fill_value=None):
     return data
 
 
-def time_norm(data, method, sr, clip_factor=1, clip_set_zero=False,
+def time_norm(data, method, sr,
+              clip_factor=None, clip_set_zero=None,
+              clip_value=2, clip_std=True, clip_mode='clip',
               mute_parts=48, mute_factor=2, median_window=None):
     """
     Calculate normalized data, see e.g. Bensen et al. (2007)
@@ -61,12 +62,20 @@ def time_norm(data, method, sr, clip_factor=1, clip_set_zero=False,
     :param data: numpy array with data to manipulate
     :param str method:
         1bit: reduce data to +1 if >0 and -1 if <0\n
-        clip: clip data to the root mean square (rms)\n
+        clip: clip data to value or multiple of root mean square (rms)\n
         mute_envelope: calculate envelope and set data to zero where envelope
         is larger than specified
-        remove_median: remove (rolling) median from data
-    :param float clip_factor: multiply std with this value before cliping
-    :param bool clip_mask: instead of clipping, set the values to zero
+        remove_median: remove (rolling) median from data, useful for removeing
+        the baseline if data was not filtered beforehand.
+    :param mask_zeros: mask values that are set to zero, they will stay zero
+        in the further processing
+    :param float clip_value: value for clipping or list of lower and upper
+        value
+    :param bool clip_std: Multiply clip_value with rms of data
+    :param bool clip_mode:
+        'clip': clip data
+        'zero': set clipped data to zero
+        'mask': set clipped data to zero and mask it
     :param int mute_parts: mean of the envelope is calculated by dividing the
         envelope into several parts, the mean calculated in each part and
         the median of this averages defines the mean envelope
@@ -82,28 +91,46 @@ def time_norm(data, method, sr, clip_factor=1, clip_set_zero=False,
     if method == '1bit':
         np.sign(data, out=data)
     elif method == 'clip':
-        std = np.std(data)
-        if clip_set_zero:
-            args = (data < -clip_factor * std, data > clip_factor * std)
-            data[np.logical_or(*args)] = 0
+        if clip_factor is not None:
+            from warnings import warn
+            msg = 'clip_factor is deprecated, use clip_value instead'
+            warn(msg, DeprecationWarning)
+            clip_value = clip_factor
+        if clip_set_zero is not None:
+            from warnings import warn
+            msg = 'clip_set_zero is deprecated, use clip_mode instead'
+            warn(msg, DeprecationWarning)
+            clip_mode = 'zero' if clip_set_zero else 'clip'
+        from collections import Iterable
+        if not isinstance(clip_value, Iterable):
+            clip_value = [-clip_value, clip_value]
+        if clip_std:
+            std = np.std(data)
+            clip_value = [clip_value[0] * std, clip_value[1] * std]
+        if clip_mode == 'clip':
+            np.clip(data, *clip_value, out=data)
         else:
-            args = (-clip_factor * std, clip_factor * std)
-            np.clip(data, *args, out=data)
+            args = (data < clip_value[0], data > clip_value[1])
+            if clip_mode == 'mask':
+                mask = np.logical_or(np.ma.getmaskarray(data), *args)
+            elif clip_mode == 'zero':
+                data[np.logical_or(*args)] = 0
+            else:
+                raise ValueError('clip_mode must be one of clip, zeros, mask')
     elif method == 'remove_median':
         with np.warnings.catch_warnings():
             # see https://github.com/numpy/numpy/issues/7330
             # median does ignore masks
-            msg = ("Warning: 'partition' will ignore the 'mask' of the "
-                   "MaskedArray.")
-            np.warnings.filterwarnings('ignore', msg)
             if median_window is None:
+                msg = ("Warning: 'partition' will ignore the 'mask' of the "
+                       "MaskedArray.")
+                np.warnings.filterwarnings('ignore', msg)
                 data -= np.median(data)
             else:
                 N = int(round(median_window * sr))
-                idx = np.arange(N) + np.arange(len(data))[:,None] - N // 2
-                idx[idx>=N] = 2*N - idx[idx>=N] - 1
-                idx[idx<N] = -idx[idx<N]
-                data -= np.median(data[idx],axis=1)
+                if N % 2 == 0:
+                    N = N + 1
+                data -= medfilt(data, N)
     elif method == 'mute_envelope':
         N = next_fast_len(len(data))
         envelope = np.abs(hilbert(data, N))[:len(data)]
@@ -156,7 +183,7 @@ def _filter_resp(freqmin, freqmax, corners=2, zerophase=False, sr=None,
 
 
 def spectral_whitening(data, sr=None, smooth=None, filter=None,
-                       waterlevel=1e-8):
+                       waterlevel=1e-8, mask_again=True):
     """
     Apply spectral whitening to data
 
@@ -169,6 +196,8 @@ def spectral_whitening(data, sr=None, smooth=None, filter=None,
     :param filter: filter spectrum with bandpass after whitening
         (tuple with min and max frequency)
     :param waterlevel: waterlevel relative to mean of spectrum
+    :param mask_again: weather to mask array after this operation again and
+        set the corresponding data to 0
 
     :return: whitened data
     """
@@ -187,7 +216,9 @@ def spectral_whitening(data, sr=None, smooth=None, filter=None,
     if filter is not None:
         spec *= _filter_resp(*filter, sr=sr, N=len(spec), whole=True)[1]
     ret = np.real(ifft(spec, nfft)[:len(data)])
-    return _fill_array(ret, mask=mask, fill_value=0.)
+    if mask_again:
+        ret = _fill_array(ret, mask=mask, fill_value=0.)
+    return ret
 
 
 def __get_stations(inventory):

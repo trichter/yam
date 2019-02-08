@@ -48,12 +48,14 @@ class TestCase(unittest.TestCase):
         np.testing.assert_equal(data2_1bit.mask, mask)
         np.testing.assert_equal(data2_1bit._data[mask], 0.)
 
-        data1_clip = time_norm(np.copy(data1), 'clip', sr, clip_factor=2)
-        data2_clip = time_norm(np.ma.copy(data2), 'clip', sr, clip_factor=2)
-        data1_clip0 = time_norm(np.copy(data1), 'clip', sr, clip_factor=2,
-                                clip_set_zero=True)
-        data2_clip0 = time_norm(np.ma.copy(data2), 'clip', sr, clip_factor=2,
-                                clip_set_zero=True)
+        data1_clip = time_norm(np.copy(data1), 'clip', sr, clip_value=2)
+        data2_clip = time_norm(np.ma.copy(data2), 'clip', sr, clip_value=2)
+        data1_clip0 = time_norm(np.copy(data1), 'clip', sr, clip_value=2,
+                                clip_mode='zero')
+        data2_clip0 = time_norm(np.ma.copy(data2), 'clip', sr, clip_value=2,
+                                clip_mode='zero')
+        data2b_clip0 = time_norm(np.ma.copy(data2), 'clip', sr, clip_value=2,
+                                 clip_mode='mask')
         clip_mask = np.abs(data1_clip) < np.abs(data1)
         with np.errstate(invalid='ignore'):
             clip_mask2 = np.abs(data2_clip) < np.abs(data2)
@@ -65,6 +67,8 @@ class TestCase(unittest.TestCase):
         np.testing.assert_equal(data2_clip0[clip_mask2], 0.)
         np.testing.assert_array_less(np.abs(data2_clip[clip_mask2]),
                                      np.abs(data2[clip_mask2]))
+        self.assertGreater(np.count_nonzero(data2b_clip0.mask),
+                           np.count_nonzero(mask))
 
         data1_me = time_norm(np.copy(data1), 'mute_envelope', sr, mute_parts=4)
         data2_me = time_norm(np.ma.copy(data2), 'mute_envelope', sr,
@@ -80,9 +84,12 @@ class TestCase(unittest.TestCase):
             msg = 'Invalid value encountered in median'
             np.warnings.filterwarnings('ignore', msg)
             data2_rm = time_norm(np.copy(data2), 'remove_median', sr)
+        data2b_rm = time_norm(np.ma.copy(data1), 'remove_median', sr,
+                              median_window=10)
         self.assertGreater(np.sum(data1**2), np.sum(data1_rm**2))
-#        self.assertGreater(np.sum(data1**2), np.sum(data1b_rm**2))
+        self.assertGreater(np.sum(data1**2), np.sum(data1b_rm**2))
 #        self.assertGreater(np.sum(data2**2), np.sum(data2_rm**2))
+#        self.assertGreater(np.sum(data2**2), np.sum(data2b_rm**2))
 
     def test_spectral_whitening(self):
         stream = read().select(component='Z')
