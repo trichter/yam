@@ -110,11 +110,11 @@ def time_norm(data, method, sr,
         if clip_mode == 'clip':
             np.clip(data, *clip_value, out=data)
         else:
-            args = (data < clip_value[0], data > clip_value[1])
+            cmask = np.logical_or(data < clip_value[0], data > clip_value[1])
             if clip_mode == 'mask':
-                mask = np.logical_or(np.ma.getmaskarray(data), *args)
+                mask = np.logical_or(np.ma.getmaskarray(data), cmask)
             elif clip_mode == 'zero':
-                data[np.logical_or(*args)] = 0
+                data[cmask] = 0
             else:
                 raise ValueError('clip_mode must be one of clip, zeros, mask')
     elif method == 'mute_envelope':
