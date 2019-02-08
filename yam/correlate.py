@@ -86,7 +86,7 @@ def time_norm(data, method, sr,
 
     :return: normalized data
     """
-    data = _fill_array(data, fill_value=0.)
+    data = _fill_array(data, fill_value=0)
     mask = np.ma.getmask(data)
     if method == '1bit':
         np.sign(data, out=data)
@@ -131,7 +131,7 @@ def time_norm(data, method, sr,
     else:
         msg = 'The method passed to time_norm is not known: %s.' % method
         raise ValueError(msg)
-    return _fill_array(data, mask=mask, fill_value=0.)
+    return _fill_array(data, mask=mask, fill_value=0)
 
 
 # http://azitech.wordpress.com/
@@ -192,7 +192,7 @@ def spectral_whitening(data, sr=None, smooth=None, filter=None,
 
     :return: whitened data
     """
-    data = _fill_array(data, fill_value=0.)
+    data = _fill_array(data, fill_value=0)
     mask = np.ma.getmask(data)
     nfft = next_fast_len(len(data))
     spec = fft(data, nfft)
@@ -208,7 +208,7 @@ def spectral_whitening(data, sr=None, smooth=None, filter=None,
         spec *= _filter_resp(*filter, sr=sr, N=len(spec), whole=True)[1]
     ret = np.real(ifft(spec, nfft)[:len(data)])
     if mask_again:
-        ret = _fill_array(ret, mask=mask, fill_value=0.)
+        ret = _fill_array(ret, mask=mask, fill_value=0)
     return ret
 
 
@@ -362,7 +362,7 @@ def _prep2(normalization, time_norm_options, spectral_whitening_options,
            decimate,
            tr):
     """Helper function for parallel preprocessing"""
-    tr.data = _fill_array(tr.data, fill_value=0.)
+    tr.data = _fill_array(tr.data, fill_value=0)
     for norm in normalization:
         if norm == 'spectral_whitening':
             sr = tr.stats.sampling_rate
@@ -524,7 +524,7 @@ def _slide_and_correlate_traces(day, next_day, length, overlap, discard,
                           100 * avail, 100 * discard)
                 continue
         for tr in sub:
-            _fill_array(tr.data, fill_value=0.)
+            _fill_array(tr.data, fill_value=0)
             tr.data = np.ma.getdata(tr.data)
         xtr = correlate_traces(sub[0], sub[1], max_lag)
         xtr.stats.starttime = t1
