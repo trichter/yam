@@ -2,6 +2,7 @@ dev:
   * add demean option (before filtering)
   * add plugin option for timenorm
   * refactor timenorm function, some kwargs are deprecated
+  * timenorm and spectral_whitening are now working with Trace objects directly (instead of numpy arrays)
   * add dpi option for most plots to set resolution of saved images
   * more verbose error message if coordinates of station cannot be found
   * fix: guarantee same length of traces which are correlated (necessary if tolerance_shift is set)

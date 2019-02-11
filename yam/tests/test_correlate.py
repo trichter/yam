@@ -33,93 +33,89 @@ class TestCase(unittest.TestCase):
     def test_time_norm(self):
         stream = read().select(component='Z')
         stream.filter('highpass', freq=0.5)
-        data1 = stream[0].data  # unmasked
+        tr1 = stream[0].copy()  # unmasked
         t = stream[0].stats.starttime
-        sr = stream[0].stats.sampling_rate
         stream.cutout(t + 18, t + 20)
         stream.merge()
-        data2 = stream[0].data  # array with masked data
-        mask = data2.mask
+        tr2 = stream[0]  # array with masked data
+        mask = tr2.data.mask
+        tr1_1bit = time_norm(tr1.copy(), '1bit')
+        #tr2_1bit = time_norm(np.ma.copy(data2), '1bit', sr)
+        tr2_1bit = time_norm(tr2.copy(), '1bit')
+        self.assertSetEqual(set(tr1_1bit.data), {-1., 0., 1.})
+        self.assertSetEqual(set(tr2_1bit.data._data), {-1., 0., 1.})
+        np.testing.assert_equal(tr2_1bit.data.mask, mask)
+        np.testing.assert_equal(tr2_1bit.data._data[mask], 0.)
 
-        data1_1bit = time_norm(np.copy(data1), '1bit', sr)
-        data2_1bit = time_norm(np.ma.copy(data2), '1bit', sr)
-        self.assertSetEqual(set(data1_1bit), {-1., 0., 1.})
-        self.assertSetEqual(set(data2_1bit._data), {-1., 0., 1.})
-        np.testing.assert_equal(data2_1bit.mask, mask)
-        np.testing.assert_equal(data2_1bit._data[mask], 0.)
-
-        data1_clip = time_norm(np.copy(data1), 'clip', sr, clip_value=2)
-        data2_clip = time_norm(np.ma.copy(data2), 'clip', sr, clip_value=2)
-        data1_clip0 = time_norm(np.copy(data1), 'clip', sr, clip_value=2,
-                                clip_mode='zero')
-        data2_clip0 = time_norm(np.ma.copy(data2), 'clip', sr, clip_value=2,
-                                clip_mode='zero')
-        data2b_clip0 = time_norm(np.ma.copy(data2), 'clip', sr, clip_value=2,
-                                 clip_mode='mask')
-        clip_mask = np.abs(data1_clip) < np.abs(data1)
+        tr1_clip = time_norm(tr1.copy(), 'clip', clip_value=2)
+        tr2_clip = time_norm(tr2.copy(), 'clip', clip_value=2)
+        tr1_clip0 = time_norm(tr1.copy(), 'clip', clip_value=2,
+                              clip_mode='zero')
+        tr2_clip0 = time_norm(tr2.copy(), 'clip', clip_value=2,
+                              clip_mode='zero')
+        tr2b_clip0 = time_norm(tr2.copy(), 'clip', clip_value=2,
+                               clip_mode='mask')
+        clip_mask = np.abs(tr1_clip.data) < np.abs(tr1.data)
         with np.errstate(invalid='ignore'):
-            clip_mask2 = np.abs(data2_clip) < np.abs(data2)
-        np.testing.assert_equal(data2_clip.mask, mask)
-        np.testing.assert_equal(data2_clip0.mask, mask)
+            clip_mask2 = np.abs(tr2_clip.data) < np.abs(tr2.data)
+        np.testing.assert_equal(tr2_clip.data.mask, mask)
+        np.testing.assert_equal(tr2_clip0.data.mask, mask)
         self.assertGreater(np.count_nonzero(clip_mask), 0)
         self.assertGreater(np.count_nonzero(clip_mask2), 0)
-        np.testing.assert_equal(data1_clip0[clip_mask], 0.)
-        np.testing.assert_equal(data2_clip0[clip_mask2], 0.)
-        np.testing.assert_array_less(np.abs(data2_clip[clip_mask2]),
-                                     np.abs(data2[clip_mask2]))
-        self.assertGreater(np.count_nonzero(data2b_clip0.mask),
+        np.testing.assert_equal(tr1_clip0.data[clip_mask], 0.)
+        np.testing.assert_equal(tr2_clip0.data[clip_mask2], 0.)
+        np.testing.assert_array_less(np.abs(tr2_clip.data[clip_mask2]),
+                                     np.abs(tr2.data[clip_mask2]))
+        self.assertGreater(np.count_nonzero(tr2b_clip0.data.mask),
                            np.count_nonzero(mask))
 
-        data1_me = time_norm(np.copy(data1), 'mute_envelope', sr, mute_parts=4)
-        data2_me = time_norm(np.ma.copy(data2), 'mute_envelope', sr,
-                             mute_parts=4)
-        ind = np.abs(data1) > 0.5 * np.max(data1)
-        np.testing.assert_equal(data1_me[ind], 0.)
-        np.testing.assert_equal(data2_me[ind], 0.)
+        tr1_me = time_norm(tr1.copy(), 'mute_envelope', mute_parts=4)
+        tr2_me = time_norm(tr2.copy(), 'mute_envelope', mute_parts=4)
+        ind = np.abs(tr1.data) > 0.5 * np.max(tr1.data)
+        np.testing.assert_equal(tr1_me.data[ind], 0.)
+        np.testing.assert_equal(tr2_me.data[ind], 0.)
 
 
     def test_spectral_whitening(self):
         stream = read().select(component='Z')
         filter_ = [0.5, 10]
         stream.filter('highpass', freq=0.5)
-        sr = stream[0].stats.sampling_rate
-        data1 = np.copy(stream[0].data)  # unmasked
-        t = stream[0].stats.starttime
+        tr1 = stream[0].copy()  # unmasked
+        t = tr1.stats.starttime
         stream.cutout(t + 18, t + 20)
         stream.merge()
-        data2 = stream[0].data  # array with masked data
-        mask = data2.mask
+        tr2 = stream[0]  # trace with masked data
+        mask = tr2.data.mask
 
-        data1 = time_norm(data1, 'mute_envelope', sr, mute_parts=4)
-        data2 = time_norm(data2, 'mute_envelope', sr, mute_parts=4)
+        time_norm(tr1, 'mute_envelope', mute_parts=4)
+        time_norm(tr2, 'mute_envelope', mute_parts=4)
 
-        wdata1 = spectral_whitening(np.copy(data1))
-        wdata1_f = spectral_whitening(np.copy(data1), sr=sr, filter=filter_)
-        wdata1_sm = spectral_whitening(np.copy(data1), sr=sr, smooth=5)
-        wdata1_sm_f = spectral_whitening(np.copy(data1), sr=sr, smooth=5,
-                                         filter=filter_)
-        wdata2 = spectral_whitening(np.ma.copy(data2))
-        wdata2_f = spectral_whitening(np.ma.copy(data2), sr=sr, filter=filter_)
-        wdata2_sm = spectral_whitening(np.ma.copy(data2), sr=sr, smooth=5)
-        wdata2_sm_f = spectral_whitening(np.ma.copy(data2), sr=sr, smooth=5,
-                                         filter=filter_)
+        trw1 = spectral_whitening(tr1.copy())
+        trw1_f = spectral_whitening(tr1.copy(), filter=filter_)
+        trw1_sm = spectral_whitening(tr1.copy(), smooth=5)
+        trw1_sm_f = spectral_whitening(tr1.copy(), smooth=5, filter=filter_)
+        trw2 = spectral_whitening(tr2.copy())
+        trw2_f = spectral_whitening(tr2.copy(), filter=filter_)
+        trw2_sm = spectral_whitening(tr2.copy(), smooth=5)
+        trw2_sm_f = spectral_whitening(tr2.copy(), smooth=5, filter=filter_)
 
-        np.testing.assert_equal(wdata2.mask, mask)
-        np.testing.assert_equal(wdata2_f.mask, mask)
-        np.testing.assert_equal(wdata2_sm.mask, mask)
-        np.testing.assert_equal(wdata2_sm_f.mask, mask)
+        np.testing.assert_equal(trw2.data.mask, mask)
+        np.testing.assert_equal(trw2_f.data.mask, mask)
+        np.testing.assert_equal(trw2_sm.data.mask, mask)
+        np.testing.assert_equal(trw2_sm_f.data.mask, mask)
 
-        nfft = next_fast_len(len(data1))
-        f, psd1 = periodogram(data1, sr, nfft=nfft)
-        f, psd2 = periodogram(data2, sr, nfft=nfft)
-        f, wpsd1 = periodogram(wdata1, sr, nfft=nfft)
-        f, wpsd1_f = periodogram(wdata1_f, sr, nfft=nfft)
-        f, wpsd1_sm = periodogram(wdata1_sm, sr, nfft=nfft)
-        f, wpsd1_sm_f = periodogram(wdata1_sm_f, sr, nfft=nfft)
-        f, wpsd2 = periodogram(wdata2, sr, nfft=nfft)
-        f, wpsd2_f = periodogram(wdata2_f, sr, nfft=nfft)
-        f, wpsd2_sm = periodogram(wdata2_sm, sr, nfft=nfft)
-        f, wpsd2_sm_f = periodogram(wdata2_sm_f, sr, nfft=nfft)
+        nfft = next_fast_len(len(tr1.data))
+        sr = stream[0].stats.sampling_rate
+        f, psd1 = periodogram(tr1.data, sr, nfft=nfft)
+        f, psd2 = periodogram(tr2.data, sr, nfft=nfft)
+        f, wpsd1 = periodogram(trw1.data, sr, nfft=nfft)
+        f, wpsd1_f = periodogram(trw1_f.data, sr, nfft=nfft)
+        f, wpsd1_sm = periodogram(trw1_sm.data, sr, nfft=nfft)
+        f, wpsd1_sm_f = periodogram(trw1_sm_f.data, sr, nfft=nfft)
+        f, wpsd2 = periodogram(trw2.data, sr, nfft=nfft)
+        f, wpsd2_f = periodogram(trw2_f.data, sr, nfft=nfft)
+        f, wpsd2_sm = periodogram(trw2_sm.data, sr, nfft=nfft)
+        f, wpsd2_sm_f = periodogram(trw2_sm_f.data, sr, nfft=nfft)
 
         ind = f < 10
         psd1 /= np.max(psd1[ind])
@@ -139,21 +135,22 @@ class TestCase(unittest.TestCase):
 #        import matplotlib.pyplot as plt
 #        ax1 = plt.subplot(221)
 #        plt.title('contiguous data')
-#        plt.plot(times, 20 * data1, label='data')
-#        plt.plot(times, wdata1, label='whitened')
-#        plt.plot(times, wdata1_f, label='+filtered')
-#        plt.plot(times, wdata1_sm, label='+smoothed')
-#        plt.plot(times, wdata1_sm_f, label='+both')
+#        times = tr1.times()
+#        plt.plot(times, 20 * tr1.data, label='data')
+#        plt.plot(times, trw1.data, label='whitened')
+#        plt.plot(times, trw1_f.data, label='+filtered')
+#        plt.plot(times, trw1_sm.data, label='+smoothed')
+#        plt.plot(times, trw1_sm_f.data, label='+both')
 #        plt.xlabel('time (s)')
 #        plt.legend()
 #
 #        plt.subplot(222, sharex=ax1, sharey=ax1)
 #        plt.title('gappy data')
-#        plt.plot(times, data2 / np.max(data2) / 5, label='data')
-#        plt.plot(times, wdata2, label='whitened')
-#        plt.plot(times, wdata2_f, label='+filtered')
-#        plt.plot(times, wdata2_sm, label='+smoothed')
-#        plt.plot(times, wdata2_sm_f, label='+bothed')
+#        plt.plot(times, tr2.data / np.max(tr2.data) / 5, label='data')
+#        plt.plot(times, trw2.data, label='whitened')
+#        plt.plot(times, trw2_f.data, label='+filtered')
+#        plt.plot(times, trw2_sm.data, label='+smoothed')
+#        plt.plot(times, trw2_sm_f.data, label='+bothed')
 #        plt.xlabel('time (s)')
 #        plt.legend()
 #

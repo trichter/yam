@@ -12,7 +12,7 @@ from obspy.core import Stream
 from obspy.geodetics import gps2dist_azimuth
 from obspy.signal.cross_correlation import correlate as obscorr
 from scipy.fftpack import fft, ifft, fftshift, ifftshift, next_fast_len
-from scipy.signal import freqz, iirfilter, hilbert, medfilt
+from scipy.signal import freqz, iirfilter, hilbert
 
 from yam.util import _filter, IterTime, smooth as smooth_func, _time2sec
 import yam.stack
@@ -52,7 +52,7 @@ def _fill_array(data, mask=None, fill_value=None):
     return data
 
 
-def time_norm(data, method, sr,
+def time_norm(tr, method,
               clip_factor=None, clip_set_zero=None,
               clip_value=2, clip_std=True, clip_mode='clip',
               mute_parts=48, mute_factor=2, plugin=None,
@@ -60,7 +60,7 @@ def time_norm(data, method, sr,
     """
     Calculate normalized data, see e.g. Bensen et al. (2007)
 
-    :param data: numpy array with data to manipulate
+    :param tr: Trace to manipulate
     :param str method:
         1bit: reduce data to +1 if >0 and -1 if <0\n
         clip: clip data to value or multiple of root mean square (rms)\n
@@ -86,6 +86,8 @@ def time_norm(data, method, sr,
 
     :return: normalized data
     """
+    sr = tr.stats.sampling_rate
+    data = tr.data
     data = _fill_array(data, fill_value=0)
     mask = np.ma.getmask(data)
     if method == '1bit':
@@ -131,7 +133,8 @@ def time_norm(data, method, sr,
     else:
         msg = 'The method passed to time_norm is not known: %s.' % method
         raise ValueError(msg)
-    return _fill_array(data, mask=mask, fill_value=0)
+    tr.data = _fill_array(data, mask=mask, fill_value=0)
+    return tr
 
 
 # http://azitech.wordpress.com/
@@ -173,15 +176,14 @@ def _filter_resp(freqmin, freqmax, corners=2, zerophase=False, sr=None,
     return freqs, values
 
 
-def spectral_whitening(data, sr=None, smooth=None, filter=None,
+def spectral_whitening(tr, smooth=None, filter=None,
                        waterlevel=1e-8, mask_again=True):
     """
     Apply spectral whitening to data
 
     Data is divided by its smoothed (Default: None) amplitude spectrum.
 
-    :param data: numpy array with data to manipulate
-    :param sr: sampling rate (only needed for smoothing)
+    :param tr: trace to manipulate
     :param smooth: length of smoothing window in Hz
         (default None -> no smoothing)
     :param filter: filter spectrum with bandpass after whitening
@@ -192,6 +194,8 @@ def spectral_whitening(data, sr=None, smooth=None, filter=None,
 
     :return: whitened data
     """
+    sr = tr.stats.sampling_rate
+    data = tr.data
     data = _fill_array(data, fill_value=0)
     mask = np.ma.getmask(data)
     nfft = next_fast_len(len(data))
@@ -209,7 +213,8 @@ def spectral_whitening(data, sr=None, smooth=None, filter=None,
     ret = np.real(ifft(spec, nfft)[:len(data)])
     if mask_again:
         ret = _fill_array(ret, mask=mask, fill_value=0)
-    return ret
+    tr.data = ret
+    return tr
 
 
 def __get_stations(inventory):
@@ -365,12 +370,9 @@ def _prep2(normalization, time_norm_options, spectral_whitening_options,
     tr.data = _fill_array(tr.data, fill_value=0)
     for norm in normalization:
         if norm == 'spectral_whitening':
-            sr = tr.stats.sampling_rate
-            tr.data = spectral_whitening(tr.data, sr=sr,
-                                         **spectral_whitening_options)
+            spectral_whitening(tr, **spectral_whitening_options)
         else:
-            tr.data = time_norm(tr.data, norm, tr.stats.sampling_rate,
-                                **time_norm_options)
+            time_norm(tr, norm, **time_norm_options)
     if decimate:
         mask = np.ma.getmask(tr.data)
         tr.decimate(decimate, no_filter=True)
