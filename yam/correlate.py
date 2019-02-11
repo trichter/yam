@@ -86,7 +86,6 @@ def time_norm(tr, method,
 
     :return: normalized data
     """
-    sr = tr.stats.sampling_rate
     data = tr.data
     data = _fill_array(data, fill_value=0)
     mask = np.ma.getmask(data)
@@ -129,7 +128,8 @@ def time_norm(tr, method,
         from yam.util import _load_func
         modulename, funcname = plugin.split(':')
         func = _load_func(modulename.strip(), funcname.strip())
-        data = func(data, sr, **plugin_options)
+        func(tr, **plugin_options)
+        data = tr.data
     else:
         msg = 'The method passed to time_norm is not known: %s.' % method
         raise ValueError(msg)
