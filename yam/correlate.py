@@ -517,15 +517,14 @@ def _slide_and_correlate_traces(day, next_day, length, overlap, discard,
             continue
         sub.trim(max(st), min(et))
         _make_same_length(sub[0], sub[1])
-        if discard:
-            avail = min((tr.data.count() if hasattr(tr.data, 'count')
-                         else len(tr)) / sr / length for tr in sub)
-            if avail < discard:
-                msg = ('discard trace combination %s-%s for time %s '
-                       '(availability %.1f%% < %.1f%% desired)')
-                log.debug(msg, sub[0].id, sub[1].id, str(max(st))[:19],
-                          100 * avail, 100 * discard)
-                continue
+        avail = min((tr.data.count() if hasattr(tr.data, 'count')
+                     else len(tr)) / sr / length for tr in sub)
+        if discard is not None and avail < discard:
+            msg = ('discard trace combination %s-%s for time %s '
+                   '(availability %.1f%% < %.1f%% desired)')
+            log.debug(msg, sub[0].id, sub[1].id, str(max(st))[:19],
+                      100 * avail, 100 * discard)
+            continue
         for tr in sub:
             _fill_array(tr.data, fill_value=0)
             tr.data = np.ma.getdata(tr.data)
@@ -535,6 +534,7 @@ def _slide_and_correlate_traces(day, next_day, length, overlap, discard,
         xtr.stats.dist = dist
         xtr.stats.azi = azi
         xtr.stats.baz = baz
+        xtr.stats.avail = avail
         xstream += xtr
     return xstream
 
