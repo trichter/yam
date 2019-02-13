@@ -219,8 +219,22 @@ def plot_corr_vs_time(
     :param show_stack: show a wiggle plot of the stack at top
     """
     ids = {_corr_id(tr) for tr in stream}
+    srs = {tr.stats.sampling_rate for tr in stream}
+    lens = {len(tr) for tr in stream}
     if len(ids) != 1:
         warn('Different ids in stream: %s' % ids)
+    # These checks should be done when saving the correlations to hdf5.
+    # On the other hand side, these problems will not occur often.
+    if len(srs) != 1:
+        sr = np.median([tr.stats.sampling_rate for tr in stream])
+        msg = 'Different sampling rates in stream: %s -> set %s Hz (%s)'
+        warn(msg % (srs, sr, stream[0].id))
+        for tr in stream:
+            tr.stats.sampling_rate = sr
+    if len(lens) != 1:
+        msg = ('Different lengths of traces in stream: %s (%s)'
+               '-> Plese use xlim parameter to trim traces')
+        warn(msg % (lens, stream[0].id))
     stream.sort(['starttime'])
     _trim_time_period(stream, ylim)
     for tr in stream:
