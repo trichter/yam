@@ -452,7 +452,7 @@ def preprocess(stream, day=None, inventory=None,
     return stream
 
 
-def correlate_traces(tr1, tr2, maxshift=3600):
+def correlate_traces(tr1, tr2, maxshift=3600, demean=True):
     """
     Return trace of cross-correlation of two input traces
 
@@ -462,7 +462,8 @@ def correlate_traces(tr1, tr2, maxshift=3600):
     n1, s1, l1, c1 = tr1.id.split('.')
     n2, s2, l2, c2 = tr2.id.split('.')
     sr = tr1.stats.sampling_rate
-    xdata = obscorr(tr1.data, tr2.data, int(round(maxshift * sr)))
+    xdata = obscorr(tr1.data, tr2.data, int(round(maxshift * sr)),
+                    demean=demean)
     header = {'network': s1, 'station': c1, 'location': s2, 'channel': c2,
               'network1': n1, 'station1': s1, 'location1': l1, 'channel1': c1,
               'network2': n2, 'station2': s2, 'location2': l2, 'channel2': c2,
@@ -496,7 +497,7 @@ def _make_same_length(tr1, tr2):
 
 
 def _slide_and_correlate_traces(day, next_day, length, overlap, discard,
-                                max_lag, outkey,
+                                max_lag, outkey, demean_window,
                                 task):
     """Helper function for parallel correlating"""
     tr1, tr2, dist, azi, baz = task
@@ -528,7 +529,7 @@ def _slide_and_correlate_traces(day, next_day, length, overlap, discard,
         for tr in sub:
             _fill_array(tr.data, fill_value=0)
             tr.data = np.ma.getdata(tr.data)
-        xtr = correlate_traces(sub[0], sub[1], max_lag)
+        xtr = correlate_traces(sub[0], sub[1], max_lag, demean=demean_window)
         xtr.stats.starttime = t1
         xtr.stats.key = outkey
         xtr.stats.dist = dist
@@ -545,6 +546,7 @@ def _midtime(stats):
 def correlate(io, day, outkey,
               edge=60,
               length=3600, overlap=1800,
+              demean_window=True,
               discard=None,
               only_auto_correlation=False,
               station_combinations=None,
@@ -564,6 +566,7 @@ def correlate(io, day, outkey,
         in seconds
     :param length: length of correlation in seconds (string possible)
     :param overlap: length of overlap in seconds (string possible)
+    :param demean_window: demean each window individually before correlating
     :param discard: discard correlations with less data coverage
         (float from interval [0, 1])
     :param only_auto_correlations: Only correlate stations with itself
@@ -675,7 +678,8 @@ def correlate(io, day, outkey,
             tasks.append((tr1, tr2, dist, azi, baz))
     # start correlation
     do_work = partial(_slide_and_correlate_traces, day, next_day, length,
-                      overlap, discard, max_lag, outkey)
+                      overlap, discard, max_lag, outkey,
+                      demean_window)
     streams = start_parallel_jobs_inner_loop(tasks, do_work, njobs)
     xstream = Stream()
     xstream.traces = [tr for s_ in streams for tr in s_]
