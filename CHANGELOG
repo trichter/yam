@@ -1,4 +1,4 @@
-dev:
+v0.4.3:
   * add demean option (before filtering)
   * add plugin option for timenorm
   * refactor timenorm function, some kwargs are deprecated
