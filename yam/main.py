@@ -275,7 +275,8 @@ def run_cmdline(args=None):
     from yam import __version__
     msg = ('Yam: Yet another monitoring tool using cross-correlations of '
            'ambient noise')
-    p = argparse.ArgumentParser(description=msg)
+    epilog = 'To get help on a subcommand run: yam command -h'
+    p = argparse.ArgumentParser(description=msg, epilog=epilog)
     version = '%(prog)s ' + __version__
     p.add_argument('--version', action='version', version=version)
     msg = 'configuration file to load (default: conf.json)'
