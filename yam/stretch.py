@@ -7,15 +7,12 @@ The results are returned in a dictionary with the following entries:
 :times: strings of starttimes of the traces (1D array, length ``N1``)
 :velchange_values: velocity changes (%) corresponding to the used stretching
     factors (assuming a homogeneous velocity change, 1D array, length ``N2``)
-:lag_time_windows: used lag time windows (2D array, dimension ``(N3, 2)``)
-:sim_mat: similarity matrices for all lag time windows
-    (3D array, dimension ``(N1, N2, N3)``)
+:tw: used lag time window
+:sim_mat: similarity matrices (2D array, dimension ``(N1, N2)``)
 :velchange_vs_time: velocity changes (%) as a function of time
-    (value of highest correlation/similarity for each time,
-    2D array, dimension ``(N1, N3)``)
+    (value of highest correlation/similarity for each time, length ``N1``)
 :corr_vs_time: correlation values as a function of time
-    (value of highest correlation/similarity for each time,
-    2D array, dimension ``(N1, N3)``)
+    (value of highest correlation/similarity for each time, length ``N1``)
 :attrs: dictionary with metadata
     (e.g. network, station, channel information of both stations,
     inter-station distance and parameters passed to the stretching function)
@@ -26,13 +23,14 @@ The results are returned in a dictionary with the following entries:
 import logging
 import functools
 import numpy as np
+from scipy.interpolate import InterpolatedUnivariateSpline
 from warnings import warn
 
-from yam._from_miic import time_windows_creation, time_stretch_estimate
 from yam.util import _corr_id, _trim, _trim_time_period
 import yam.stack
 
 log = logging.getLogger('yam.stretch')
+
 
 def _intersect_sorted(l1, l2):
     i = 0
@@ -44,6 +42,7 @@ def _intersect_sorted(l1, l2):
             res.append(el)
             i += 1
     return res
+
 
 def _index_sorted(l1, l2):
     index = np.empty(len(l1), dtype=bool)
@@ -59,16 +58,13 @@ def _index_sorted(l1, l2):
             index[j] = False
     return index
 
+
 def _update_result(res):
-    dim1, _, dim3 = res['sim_mat'].shape
-    dtype = res['sim_mat'].dtype
-    res['velchange_vs_time'] = np.empty((dim1, dim3), dtype=dtype)
-    res['corr_vs_time'] = np.empty((dim1, dim3), dtype=dtype)
-    for i in range(dim3):
-        tmp = res['sim_mat'][:, :, i]
-        res['corr_vs_time'][:, i] = np.max(tmp, axis=1)
-        argmax = np.argmax(tmp, axis=1)
-        res['velchange_vs_time'][:, i] = res['velchange_values'][argmax]
+    sim_mat = res['sim_mat']
+    res['corr_vs_time'] = np.max(sim_mat, axis=1)
+    argmax = np.argmax(sim_mat, axis=1)
+    res['velchange_vs_time'] = res['velchange_values'][argmax]
+
 
 def join_dicts(dicts):
     """Join list of dictionaries with stretching results"""
@@ -80,23 +76,22 @@ def join_dicts(dicts):
     dim1 = sum(len(d['times']) for d in dicts)
     d = dicts[0]
     dim2 = len(d['velchange_values'])
-    dim3 = len(d['lag_time_windows'])
     dtype = d['sim_mat'].dtype
-    res = {'sim_mat': np.empty((dim1, dim2, dim3), dtype=dtype),
+    res = {'sim_mat': np.empty((dim1, dim2), dtype=dtype),
            'velchange_values': d['velchange_values'],
            'times': np.empty(dim1, dtype=d['times'].dtype),
-           'velchange_vs_time': np.empty((dim1, dim3), dtype=dtype),
-           'corr_vs_time': np.empty((dim1, dim3), dtype=dtype),
+           'velchange_vs_time': np.empty(dim1, dtype=dtype),
+           'corr_vs_time': np.empty(dim1, dtype=dtype),
            'lag_time_windows': d['lag_time_windows'],
            'attrs': d['attrs']}
     res['attrs']['endtime'] = dicts[-1]['attrs']['endtime']
     i = 0
     for d in dicts:
         j = i + len(d['times'])
-        res['sim_mat'][i:j, :, :] = d['sim_mat']
+        res['sim_mat'][i:j, :] = d['sim_mat']
         res['times'][i:j] = d['times']
-        res['velchange_vs_time'][i:j, :] = d['velchange_vs_time']
-        res['corr_vs_time'][i:j, :] = d['corr_vs_time']
+        res['velchange_vs_time'][i:j] = d['velchange_vs_time']
+        res['corr_vs_time'][i:j] = d['corr_vs_time']
         i = j
     return res
 
@@ -110,12 +105,12 @@ def average_dicts(dicts):
     times = functools.reduce(_intersect_sorted, [d['times'] for d in dicts])
     d = dicts[0]
     sim_mat = np.mean(
-            [d['sim_mat'][_index_sorted(d['times'], times), :, :]
-             for d in dicts], axis=0)
+        [d['sim_mat'][_index_sorted(d['times'], times), :] for d in dicts],
+        axis=0)
     res = {'sim_mat': sim_mat,
            'velchange_values': d['velchange_values'],
            'times': np.array(times),
-           'lag_time_windows': d['lag_time_windows'],
+           'tw': d['tw'],
            'attrs': d['attrs']}
     res['attrs']['channel1'] = '???'
     res['attrs']['channel2'] = '???'
@@ -123,10 +118,31 @@ def average_dicts(dicts):
     return res
 
 
-def stretch(stream, reftr=None, str_range=10, nstr=100,
-            time_windows=None,
-            time_windows_relative=None, sides='right',
-            max_lag=None, time_period=None
+def _stretch_helper(data, refdata, mask, stretch_factor):
+    N1, N2 = data.shape
+    N3 = len(stretch_factor)
+    assert N2 == len(refdata)
+    # create a spline object for the reference trace
+    # and evaluate the spline object at stretched times
+    time_index_max = (N2 - 1) / 2
+    time_idx = np.linspace(-time_index_max, time_index_max, N2)
+    ref_tr_spline = InterpolatedUnivariateSpline(time_idx, refdata)
+    ref_stretch = np.empty((N3, N2))
+    for i in range(N3):
+        ref_stretch[i, :] = ref_tr_spline(time_idx * stretch_factor[i])
+    # correlate, normalize and return
+    cc = (data * mask) @ np.transpose(ref_stretch * mask)
+    sq1 = np.sum((data * mask) ** 2, axis=1)
+    sq2 = np.sum((ref_stretch * mask) ** 2, axis=1)
+    norm = (sq1[:, np.newaxis] * sq2) ** 0.5
+    sim_mat = cc / norm
+    sim_mat[np.isnan(sim_mat)] = 0
+    assert sim_mat.shape == (N1, N3)
+    return sim_mat
+
+
+def stretch(stream, max_stretch, num_stretch, tw, tw_relative=None,
+            reftr=None, sides='both', max_lag=None, time_period=None
             ):
     """
     Stretch traces in stream and return dictionary with results
@@ -134,17 +150,16 @@ def stretch(stream, reftr=None, str_range=10, nstr=100,
     See e.g. Richter et al. (2015) for a description of the procedure.
 
     :param stream: |Stream| object with correlations
-    :param reftr: reference trace -- not implemented yet, the reference
-        is the stack of the stream
-    :param float str_range: stretching range in percent
-    :param int nstr: number of values in stretching vector
-    :param time_windows: definition of time windows in the correlation --
-        tuple of length 2, first entry: tuple of start times in seconds,
-        second entry: length in seconds, e.g. ``((5, 10, 15), 5)`` defines
-        three time windows of length 5 seconds starting at 5, 10, 15 seconds
-    :param time_windows_relative: time windows can be defined relative to a
-        velocity, default None or 0 -- time windows relative to zero leg time,
+    :param float max_stretch: stretching range in percent
+    :param int num_stretch: number of values in stretching vector
+    :param tw: definition of the time window in the correlation --
+        tuple of length 2 with start and end time in seconds (positive)
+    :param tw_relative: time windows can be defined relative to a
+        velocity, default None or 0 -- time windows relative to zero lag time,
         otherwise velocity is given in km/s
+    :param reftr: reference trace, by default the stack of stream is used
+        as reference
+    :param sides: one of left, right, both
     :param max_lag: max lag time in seconds, stream is trimmed to
         ``(-max_lag, max_lag)`` before stretching
     :param time_period: use correlations only from this time span
@@ -161,70 +176,44 @@ def stretch(stream, reftr=None, str_range=10, nstr=100,
         warn('Different ids in stream: %s' % ids)
     _trim_time_period(stream, time_period)
     stream.sort()
-    sr = stream[0].stats.sampling_rate
-    rel = 0.
-    if time_windows_relative is not None:
-        rel = np.round(stream[0].stats.dist / 1000 / time_windows_relative)
-    if time_windows is not None and isinstance(time_windows[1], (float, int)):
-        args = ((rel + np.array(time_windows[0])) * int(sr),
-                time_windows[1] * int(sr))
-        tw_mat = time_windows_creation(*args)
-    else:
-        raise ValueError('Wrong format for time_window')
+    tr0 = stream[0]
     if max_lag is not None:
         for tr in stream:
             _trim(tr, (-max_lag, max_lag))
+    rel = 0 if tw_relative is None else tr0.stats.dist / 1000 / tw_relative
+    twabs = rel + np.array(tw)
+    starttime = tr0.stats.starttime
+    mid = starttime + (tr0.stats.endtime - starttime) / 2
+    times = tr0.times(reftime=mid)
     data = np.array([tr.data for tr in stream])
-    if np.min(tw_mat) < 0 or data.shape[1] < np.max(tw_mat):
-        msg = ('Defined time window outside of data. '
-               'shape, mintw index, maxtw index: %s, %s, %s')
-        raise ValueError(msg % (data.shape[1], np.min(tw_mat), np.max(tw_mat)))
     data[np.isnan(data)] = 0  # bug fix
     data[np.isinf(data)] = 0
     if reftr is None:
         reftr = yam.stack.stack(stream)[0]
-    if reftr != 'alternative':
-        if hasattr(reftr, 'stats'):
-            assert reftr.stats.sampling_rate == sr
-            ref_data = reftr.data
-            #ref_data = _stream2matrix(obspy.Stream([reftr]))[0, :]
-        else:
-            ref_data = reftr
-#        log.debug('calculate correlations and time shifts...')
-        # convert str_range from % to decimal
-        tse = time_stretch_estimate(
-            data, ref_trc=ref_data, tw=tw_mat, stretch_range=str_range / 100,
-            stretch_steps=nstr, sides=sides)
-#    else:
-#        assert len(tw_mat) == len(stretch)
-#        tses = []
-#        log.debug('calculate correlations and time shifts...')
-#        for i in range(len(tw_mat)):
-#            tw = tw_mat[i:i + 1]
-#            st = stretch[i]
-#            sim_mat = time_stretch_apply(data, st, single_sided=False)
-#            ref_data = np.mean(sim_mat, axis=0)
-#            tse = time_stretch_estimate(data, ref_trc=ref_data, tw=tw,
-#                                 stretch_range=str_range, stretch_steps=nstr,
-#                                 sides=sides)
-#            tses.append(tse)
-#        for i in ('corr', 'stretch'):
-#            tse[i] = np.hstack([t[i] for t in tses])
-#        i = 'sim_mat'
-#        tse[i] = np.vstack([t[i] for t in tses])
+    stretch_vector_perc = np.linspace(-max_stretch, max_stretch, num_stretch)
+    stretch_factor = 1 + stretch_vector_perc / 100
+    # MIIC approximation:
+    #stretch_factor = np.exp(stretch_vector_percent / 100)
+
+    mask1 = np.logical_and(times >= twabs[0], times <= twabs[1])
+    mask2 = np.logical_and(times <= -twabs[0], times >= -twabs[1])
+    if sides == 'left':
+        mask = mask1
+    elif sides == 'right':
+        mask = mask2
+    elif sides == 'both':
+        mask = np.logical_or(mask1, mask2)
+    else:
+        raise ValueError('sides = %s not a valid option' % sides)
+    sim_mat = _stretch_helper(data, reftr.data, mask, stretch_factor)
     times = np.array([str(tr.stats.starttime)[:19] for tr in stream],
                      dtype='S19')
-    ltw1 = rel + np.array(time_windows[0])
-    # convert streching to velocity change
-    # -> minus at several places
-    result = {'sim_mat': tse['sim_mat'][:, ::-1, :],
-              'velchange_values': -tse['second_axis'][::-1] * 100,
+    result = {'sim_mat': sim_mat,
+              'velchange_values': stretch_vector_perc,
               'times': times,
-              #'velchange_vs_time': -tse['value'] * 100,
-              #'corr_vs_time': tse['corr'],
-              'lag_time_windows': np.transpose([ltw1, ltw1 + time_windows[1]]),
-              'attrs': {'nstr': nstr,
-                        'str_range': str_range,
+              'tw': twabs,
+              'attrs': {'num_stretch': num_stretch,
+                        'max_stretch': max_stretch,
                         'sides': sides,
                         'starttime': stream[0].stats.starttime,
                         'endtime': stream[-1].stats.starttime
@@ -234,5 +223,6 @@ def stretch(stream, reftr=None, str_range=10, nstr=100,
     for k in ('network1', 'network2', 'station1', 'station2',
               'location1', 'location2', 'channel1', 'channel2',
               'sampling_rate', 'dist', 'azi', 'baz'):
-        result['attrs'][k] = stream[0].stats[k]
+        if k in tr0.stats:
+            result['attrs'][k] = tr0.stats[k]
     return result

@@ -1,3 +1,7 @@
+v0.5.0:
+  * major refactoring of stretch module, some config options for stretching are renamed,
+    the resulting dictionaries changed in a backwards incompatible way,
+    please (a) use yam version < 0.5 or (b) adapt config file and run yam stretch again for any existing project
 v0.4.3:
   * add demean option (before filtering)
   * add plugin option for timenorm

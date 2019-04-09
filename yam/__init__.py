@@ -112,7 +112,7 @@ Now you can try out some of the following commands:
     yam correlate 1        # should finish fast, because everything is already calculated
     yam correlate auto     # correlate data with another configuration suitable for auto-correlations
     yam plot c1_s1d --plottype vs_dist  # plot correlation versus distance
-    yam plot cauto --plot-options '{"trim": [0, 10]}'  # plot auto-correlations versus time and change some options
+    yam plot cauto --plot-options '{"xlim": [0, 10]}'  # plot auto-correlations versus time and change some options
                                                        # ("wiggle" plot also possible)
     yam stack c1_s1d 3dm1d       # stack 1 day correlations with a moving stack of 3 days
     yam stack cauto 2            # stack auto-correlations with stack configuration 2
@@ -194,7 +194,7 @@ More information about the different subcommands of yam can be found in the corr
 .. |io| replace:: io configuration dictionary
 """
 
-__version__ = '0.4.4-dev'
+__version__ = '0.5.0-dev'
 
 from yam.main import run
 from yam.commands import read_dicts

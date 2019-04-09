@@ -227,6 +227,7 @@ def get_data(starttime, endtime, **smeta):
         po = ('--plot-options {"show_line":true,'
                               '"xlim":[null,"2010-02-05"]}')
         self.out('stretch c1_s1d/CX.PATCX-CX.PATCX 1')
+        self.out('stretch c1_s1d/CX.PATCX-CX.PATCX 1b')
         self.out("stack c1_s1d None")
         self.out('stretch c1_s1d 1 --reftrid c1_s1d_s')
         self.out('stretch cauto/CX.PATCX-CX.PATCX/.BHZ-.BHZ 2')
@@ -238,21 +239,24 @@ def get_data(starttime, endtime, **smeta):
                 '"time_period": [null, "2010-02-05"], "max_lag": 40, '
                 '"sides": "right"')
         self.out('-c conf2.json stretch cauto/CX.PATCX-CX.PATCX/.BHZ-.BHZ 2')
+        self.out('-c conf2.json stretch cauto/CX.PATCX-CX.PATCX/.BHZ-.BHZ 2b')
         self.out('plot c1_s1d_t1/CX.PATCX-CX.PB06 %s' % po)
+        self.out('plot c1_s1d_t1b/CX.PATCX-CX.PB06 %s' % po)
         self.out('plot cauto_t2 --plottype wiggle', 'not supported')
         self.out('plot cauto_t2')
+        self.out('plot cauto_t2b')
         globexpr = os.path.join(self.plotdir, 'sim_mat_cauto_t2*.png')
-        self.assertEqual(len(glob.glob(globexpr)), 6)
+        self.assertEqual(len(glob.glob(globexpr)), 3)
         globexpr = os.path.join(self.plotdir, 'sim_mat_c1_s1d_t1*.png')
         if not self.permanent_tempdir:
-            self.assertEqual(len(glob.glob(globexpr)), 9)
+            self.assertEqual(len(glob.glob(globexpr)), 3)
         self.out('plot c1_s1d_t1')
-        num_plots = 15 if self.less_data else 21
+        num_plots = 5 if self.less_data else 7
         self.assertEqual(len(glob.glob(globexpr)), num_plots)
         num_combs = 5 if self.less_data else 7
         self.out('info', 'c1_s1d_t1: %d combs' % num_combs)
         self.out('info cauto_t2', 'CX.PATCX-CX.PATCX/.BHZ-.BHZ')
-        info_t = self.out('print cauto_t2', 'lag_time_windows')
+        info_t = self.out('print cauto_t2', 'num_stretch')
         self.assertGreater(len(info_t.splitlines()), 100)  # lots of lines
 
         # check export

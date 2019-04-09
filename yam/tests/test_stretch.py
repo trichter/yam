@@ -15,7 +15,6 @@ class TestCase(unittest.TestCase):
 
     def test_stretch(self):
         h = {'sampling_rate': 100}
-        # TODO: allow to call stretch without these headers
         h['network1'] = h['network2'] = 'NET'
         h['station1'] = h['station2'] = h['network'] = h['location'] = 'STA'
         h['location1'] = h['location2'] = ''
@@ -27,22 +26,18 @@ class TestCase(unittest.TestCase):
         t0 = UTC()
         for i, v in enumerate(vel_changes):
             mul = 1 + v / 100
-            # there is a small difference, because the routines from MIIC
-            # use the following approximation for stretching:
-            # mul = np.exp(v / 100)
             t = np.linspace(-10 * mul, 10 * mul, 10001)
             data = np.cos(2 * np.pi * t)
             h['starttime'] = t0 + i * dt
             tr = Trace(data, header=h)
             traces.append(tr)
-        d = stretch(Stream(traces), reftr=traces[0], str_range=1.1,
-                    nstr=2201,
-                    time_windows=[[1], 4], sides='both')
-        expect = np.array(vel_changes)[:, np.newaxis]
-        np.testing.assert_allclose(d['velchange_vs_time'], expect, atol=0.008)
-        # routine from miic uses approximation exp(dv/v) = 1 + dv/v
-        corrected = -np.log(d['velchange_vs_time'] / -100 + 1) * 100
-        np.testing.assert_allclose(corrected, expect, rtol=1e-4)
+        d = stretch(Stream(traces), max_stretch=1.1, num_stretch=2201,
+                    tw=(1, 5), sides='both', reftr=traces[0])
+        expect = np.array(vel_changes)
+        np.testing.assert_allclose(d['velchange_vs_time'], expect)
+        np.testing.assert_allclose(d['corr_vs_time'], (1, 1, 1))
+        self.assertAlmostEqual(d['velchange_values'][-1], 1.1)
+        self.assertEqual(len(d['velchange_values']), 2201)
         # test writing and reading
         with tempfile.TemporaryDirectory(prefix='yam_') as tmpdir:
             fname = os.path.join(tmpdir, 'stretch.h5')

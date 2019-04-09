@@ -141,26 +141,31 @@
 # The options are passed to yam.stretch.stretch
 
 "stretch": {
-        "1": {  # filter correlations
+        "1": { # filter correlations
         	    "filter": [0.02, 0.4],
         	    # stretching range in % (here from -10% to 10%)
-                "str_range": 10,
+                "max_stretch": 10,
                 # number of stretching samples
-                "nstr": 101,
-                # different lag time windows to analyze
-                # (first entry starttimes in seconds, second entry: length in seconds, here three different time windows)
-                "time_windows": [[10, 20, 30], 10],
+                "num_stretch": 101,
+                # lag time window to analyze (seconds)
+                "tw": [20, 30],
                 # Time windows can be defined relative to (distance between stations) / given velocity.
                 # Set it to null to have time windows defined relative to 0s lag time.
-                "time_windows_relative":  2,  # in km/s
-                # analyze this side of the correlation ("left", "right", "both")
+                "tw_relative":  2,  # in km/s
+                # analyze these sides of the correlation ("left", "right", "both")
                 "sides": "both"
                 },
-        "2": {  "str_range": 1,
-                "nstr": 101,
-                "time_windows": [[5, 10, 15], 5],
-                "time_windows_relative": null,  # relative to middle (0s lag time)
+        "1b": { "based_on": "1",
+                "tw": [30, 40]
+                },
+        "2": {  "max_stretch": 1,
+                "num_stretch": 101,
+                "tw": [10, 15],
+                "tw_relative": null,  # relative to middle (0s lag time)
                 "sides": "right"
+                },
+        "2b": { "based_on": "2",
+                "tw": [5, 10]
                 }
         },
 

@@ -6,7 +6,7 @@ Plotting functions
 Common arguments in plotting functions are:
 
 :stream: |Stream| object with correlations
-:b/fname: file or base name for the plot output
+:fname: file name for the plot output
 :ext: file name extension (e.g. ``'png'``, ``'pdf'``)
 :figsize: figure size (tuple of inches)
 :dpi: resolution of image file (not available for station plot)
@@ -116,7 +116,7 @@ def plot_data(data, fname, ext='png', show=False,
 
 
 def plot_corr_vs_dist(
-        stream, fname, figsize=(10, 5), ext='png', dpi=None,
+        stream, fname=None, figsize=(10, 5), ext='png', dpi=None,
         components='ZZ', line_style='k', scale=1, dist_unit='km',
         xlim=None, ylim=None, time_period=None):
     """
@@ -151,18 +151,22 @@ def plot_corr_vs_dist(
         lag_times = _trim(tr, xlim)
         scaled_data = tr.stats.dist / dist_scale + tr.data * max_dist * scale
         ax.plot(lag_times, scaled_data, line_style)
-    fname = '%s_%s' % (fname, components)
-    label = os.path.basename(fname)
+    if fname is not None:
+        fname = '%s_%s' % (fname, components)
+        label = os.path.basename(fname)
+    else:
+        label = components
     ax.set_ylim(ylim)
     ax.annotate(label, (0, 1), (10, 10), 'axes fraction', 'offset points',
                 annotation_clip=False, va='bottom')
     ax.set_ylabel('distance (%s)' % dist_unit)
     ax.set_xlabel('time (s)')
-    fig.savefig(fname + '.' + ext, dpi=dpi)
+    if fname is not None:
+        fig.savefig(fname + '.' + ext, dpi=dpi)
 
 
 def plot_corr_vs_time_wiggle(
-        stream, fname, figsize=(10, 5), ext='png', dpi=None,
+        stream, fname=None, figsize=(10, 5), ext='png', dpi=None,
         xlim=None, ylim=None,
         line_style='k', line_width=0.5, scale=20):
     """
@@ -191,17 +195,18 @@ def plot_corr_vs_time_wiggle(
         lag_times = _trim(tr, xlim)
         scaled_data = tr.stats.starttime.matplotlib_date + tr.data * dt * scale
         ax.plot(lag_times, scaled_data, line_style, lw=line_width)
-    label = os.path.basename(fname)
+    label = '' if fname is None else os.path.basename(fname)
     ax.annotate(label, (0, 1), (10, 10), 'axes fraction', 'offset points',
                 annotation_clip=False, va='bottom')
     ax.set_ylabel('date')
     ax.set_xlabel('time (s)')
     ax.yaxis_date()
-    fig.savefig(fname + '.' + ext, dpi=dpi)
+    if fname is not None:
+        fig.savefig(fname + '.' + ext, dpi=dpi)
 
 
 def plot_corr_vs_time(
-        stream, fname, figsize=(10, 5), ext='png', dpi=None,
+        stream, fname=None, figsize=(10, 5), ext='png', dpi=None,
         xlim=None, ylim=None, vmax=None, cmap='RdBu_r',
         show_stack=True, line_style='k', line_width=1):
     """
@@ -268,13 +273,14 @@ def plot_corr_vs_time(
         plt.setp(ax2.get_xticklabels(), visible=False)
         ax_ano = ax2
     ax.set_xlim(lag_times[0], lag_times[-1])
-    label = os.path.basename(fname)
+    label = '' if fname is None else os.path.basename(fname)
     ax_ano.annotate(label, (0, 1), (10, 10), 'axes fraction', 'offset points',
                     annotation_clip=False, va='bottom')
-    fig.savefig(fname + '.' + ext, dpi=dpi)
+    if fname is not None:
+        fig.savefig(fname + '.' + ext, dpi=dpi)
 
 
-def plot_sim_mat(res, bname=None, figsize=(10, 5), ext='png', dpi=None,
+def plot_sim_mat(res, fname=None, figsize=(10, 5), ext='png', dpi=None,
                  xlim=None, ylim=None, vmax=None, cmap='hot_r',
                  show_line=False, line_style='b', line_width=2,
                  time_window=None):
@@ -293,49 +299,40 @@ def plot_sim_mat(res, bname=None, figsize=(10, 5), ext='png', dpi=None,
     :param time_window: do not create figures for each time window in the
         results dictionary, but only for one time window with given index
     """
-    labelexpr = '{}_tw{:02d}_{:05.1f}s-{:05.1f}s'
-    figs = []
-    for itw, tw in enumerate(res['lag_time_windows']):
-        if time_window is not None and itw != time_window:
-            continue
-        fig = plt.figure(figsize=figsize)
-        ax = fig.add_subplot(111)
-        data = np.transpose(res['sim_mat'][:, :, itw])
-        x = [UTC(t) for t in res['times']]
-        no_data = _get_times_no_data(x)
-        x = _add_value(x, no_data)
-        x = [t.datetime for t in x]
-        x2 = _align_values_for_pcolormesh(x)
-        y2 = _align_values_for_pcolormesh(copy(res['velchange_values']))
-        if vmax is None:
-            vmax = np.max(data)
-        data = _add_value(data, no_data, value=0, masked=True)
-        mesh = ax.pcolormesh(x2, y2, data, cmap=cmap, vmin=0, vmax=vmax)
-        if show_line:
-            s = res['velchange_vs_time'][:, itw]
-            s = _add_value(s, no_data, value=0, masked=True)
-            ax.plot(x, s, line_style, lw=line_width)
-        ax.set_xlabel('date')
-        ax.set_ylabel('velocity change (%)')
-        fig.autofmt_xdate()
-        fig.colorbar(mesh, shrink=0.5)
-        bname2 = 'sim_mat' if bname is None else bname
-        fname = labelexpr.format(bname2, itw, *tw)
-        label = os.path.basename(fname)
-        ax.annotate(label, (0, 1), (10, 10), 'axes fraction', 'offset points',
-                    annotation_clip=False, va='bottom')
-        if ylim:
-            if isinstance(ylim, (float, int)):
-                ylim = (-ylim, ylim)
-            ax.set_ylim(ylim)
-        t0, t1 = (None, None) if xlim is None else xlim
-        t0 = x2[0] if t0 is None else UTC(t0).matplotlib_date
-        t1 = x2[-1] if t1 is None else UTC(t1).matplotlib_date
-        ax.set_xlim(t0, t1)
-        if bname is not None:
-            fig.savefig(fname + '.' + ext, dpi=dpi)
-        figs.append(fig)
-    if time_window is None:
-        return figs
-    elif len(figs) == 1:
-        return figs[0]
+    tw = res['tw']
+    fig = plt.figure(figsize=figsize)
+    ax = fig.add_subplot(111)
+    data = np.transpose(res['sim_mat'])
+    x = [UTC(t) for t in res['times']]
+    no_data = _get_times_no_data(x)
+    x = _add_value(x, no_data)
+    x = [t.datetime for t in x]
+    x2 = _align_values_for_pcolormesh(x)
+    y2 = _align_values_for_pcolormesh(copy(res['velchange_values']))
+    if vmax is None:
+        vmax = np.max(data)
+    data = _add_value(data, no_data, value=0, masked=True)
+    mesh = ax.pcolormesh(x2, y2, data, cmap=cmap, vmin=0, vmax=vmax)
+    if show_line:
+        s = res['velchange_vs_time']
+        s = _add_value(s, no_data, value=0, masked=True)
+        ax.plot(x, s, line_style, lw=line_width)
+    ax.set_xlabel('date')
+    ax.set_ylabel('velocity change (%)')
+    fig.autofmt_xdate()
+    fig.colorbar(mesh, shrink=0.5)
+    label = '' if fname is None else os.path.basename(fname) + '_'
+    label = label + 'tw_{:05.1f}s-{:05.1f}s'.format(*tw)
+    ax.annotate(label, (0, 1), (10, 10), 'axes fraction', 'offset points',
+                annotation_clip=False, va='bottom')
+    if ylim:
+        if isinstance(ylim, (float, int)):
+            ylim = (-ylim, ylim)
+        ax.set_ylim(ylim)
+    t0, t1 = (None, None) if xlim is None else xlim
+    t0 = x2[0] if t0 is None else UTC(t0).matplotlib_date
+    t1 = x2[-1] if t1 is None else UTC(t1).matplotlib_date
+    ax.set_xlim(t0, t1)
+    if fname is not None:
+        fig.savefig(fname + '.' + ext, dpi=dpi)
+    return fig
