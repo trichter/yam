@@ -1,4 +1,4 @@
-# Copyright 2017-2018 Tom Eulenfeld, GPLv3
+# Copyright 2017-2019 Tom Eulenfeld, MIT license
 """Preprocessing and correlation"""
 from functools import partial
 import itertools

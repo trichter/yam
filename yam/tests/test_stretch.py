@@ -1,4 +1,4 @@
-# Copyright 2018 Tom Eulenfeld, GPLv3
+# Copyright 2018-2019 Tom Eulenfeld, MIT license
 
 import os.path
 import tempfile
