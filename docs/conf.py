@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Qopen documentation build configuration file, created by
+# Custom documentation build configuration file, created by
 # sphinx-quickstart on Fri Oct 14 12:14:22 2016.
 #
 # This file is execfile()d with the current directory set to its
@@ -58,7 +58,7 @@ class Mock(object):
     def __getitem__(cls, name):
         return 0
 
-# Mock all modules in qopen which raise an import error
+# Mock all modules which raise an import error
 for i in range(20):
     try:
         import yam
