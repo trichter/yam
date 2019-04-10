@@ -68,6 +68,7 @@ def _update_result(res):
 
 def join_dicts(dicts):
     """Join list of dictionaries with stretching results"""
+    # TODO: write test for this function
     if len(dicts) == 0:
         return
     elif len(dicts) == 1:
@@ -98,6 +99,7 @@ def join_dicts(dicts):
 
 def average_dicts(dicts):
     """Average list of dictionaries with stretching results"""
+    # TODO: write test for this function
     if len(dicts) == 0:
         return
     elif len(dicts) == 1:
