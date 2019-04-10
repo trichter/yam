@@ -377,7 +377,7 @@ class TestCase(unittest.TestCase):
         self.assertEqual(res, None)
 
 
-    def _test_make_same_length(self):
+    def test_make_same_length(self):
         tr1 = read()[0]
         tr1.stats.sampling_rate = 1
         utc = tr1.stats.starttime
@@ -388,7 +388,7 @@ class TestCase(unittest.TestCase):
             tr2a = tr2.slice(utc + dt, utc + 3.7 + dt)
             _make_same_length(tr1a, tr2a)
             self.assertEqual(len(tr1a), len(tr2a))
-            self.asertLess(tr1a.stats.starttime - tr2a.stats.starttime, 0.5)
+            self.assertLess(tr1a.stats.starttime - tr2a.stats.starttime, 0.5)
 
 
 def suite():
