@@ -19,7 +19,7 @@ class TestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         args = sys.argv[1:]
-        cls.njobs = int(args[args.index('-n') + 1]) if '-n'  in args else None
+        cls.njobs = int(args[args.index('-n') + 1]) if '-n' in args else None
 
     def test_fill_array(self):
         data = np.arange(5, dtype=float)
@@ -74,7 +74,6 @@ class TestCase(unittest.TestCase):
         ind = np.abs(tr1.data) > 0.5 * np.max(tr1.data)
         np.testing.assert_equal(tr1_me.data[ind], 0.)
         np.testing.assert_equal(tr2_me.data[ind], 0.)
-
 
     def test_spectral_whitening(self):
         stream = read().select(component='Z')
@@ -341,11 +340,11 @@ class TestCase(unittest.TestCase):
                 np.testing.assert_allclose(xcorr_max(tr.data), (0, 1.))
 
         res = yam_correlate(
-                  io, day, 'outkey',
-                  station_combinations=('GR.FUR-GR.WET', 'RJOB-RJOB'),
-                  component_combinations=('ZZ', 'NE', 'NR'),
-                  keep_correlations=True,
-                  stack='1d', njobs=self.njobs)
+            io, day, 'outkey',
+            station_combinations=('GR.FUR-GR.WET', 'RJOB-RJOB'),
+            component_combinations=('ZZ', 'NE', 'NR'),
+            keep_correlations=True,
+            stack='1d', njobs=self.njobs)
         self.assertEqual(len(res['corr']), 7)
         self.assertEqual(len(res['stack']), 7)
         ids = ['RJOB.EHE.RJOB.EHN', 'RJOB.EHZ.RJOB.EHZ',
@@ -358,11 +357,11 @@ class TestCase(unittest.TestCase):
                 np.testing.assert_allclose(xcorr_max(tr.data), (0, 1.))
 
         res = yam_correlate(
-                  io, day, 'outkey', only_auto_correlation=True,
-                  station_combinations=('GR.FUR-GR.WET', 'RJOB-RJOB'),
-                  component_combinations=['ZN', 'RT'], njobs=self.njobs,
-                  keep_correlations=True,
-                  remove_response=True)
+            io, day, 'outkey', only_auto_correlation=True,
+            station_combinations=('GR.FUR-GR.WET', 'RJOB-RJOB'),
+            component_combinations=['ZN', 'RT'], njobs=self.njobs,
+            keep_correlations=True,
+            remove_response=True)
         self.assertEqual(len(res['corr']), 1)
         tr = res['corr'][0]
         self.assertEqual(tr.stats.station[-1], 'N')
@@ -370,12 +369,11 @@ class TestCase(unittest.TestCase):
 
         stream.traces = [tr for tr in stream if tr.stats.channel[-1] != 'N']
         res = yam_correlate(
-                  io, day, 'outkey',
-                  station_combinations=('GR.FUR-GR.WET', 'RJOB-RJOB'),
-                  component_combinations=('NT', 'NR'), discard=0.0,
-                  keep_correlations=True)
+            io, day, 'outkey',
+            station_combinations=('GR.FUR-GR.WET', 'RJOB-RJOB'),
+            component_combinations=('NT', 'NR'), discard=0.0,
+            keep_correlations=True)
         self.assertEqual(res, None)
-
 
     def test_make_same_length(self):
         tr1 = read()[0]
