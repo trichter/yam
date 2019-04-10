@@ -321,8 +321,11 @@ def plot_sim_mat(res, fname=None, figsize=(10, 5), ext='png', dpi=None,
     ax.set_ylabel('velocity change (%)')
     fig.autofmt_xdate()
     fig.colorbar(mesh, shrink=0.5)
-    label = '' if fname is None else os.path.basename(fname) + '_'
-    label = label + 'tw_{:05.1f}s-{:05.1f}s'.format(*tw)
+    label_tw = 'tw_{:05.1f}s-{:05.1f}s'.format(*tw)
+    if fname is None:
+        label = label_tw
+    else:
+        label = os.path.basename(fname) + '_' + label_tw
     ax.annotate(label, (0, 1), (10, 10), 'axes fraction', 'offset points',
                 annotation_clip=False, va='bottom')
     if ylim:
