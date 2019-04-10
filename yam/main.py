@@ -255,14 +255,27 @@ def run2(command, io,
             yam.commands.plot(io, key + subkey, corrid=corrid, **args)
     elif command == 'scan':
         data_glob = yam.commands._get_data_glob(io['data'])
+        print('Please use the obspy-scan script provided with ObsPy to '
+              'scan the archive for data availability.')
         print('Suggested call to obspy-scan:')
+        parts = []
         if io.get('data_format') is not None:
-            print('obspy-scan -f %s %s' % (io['data_format'], data_glob))
-        else:
-            print('obspy-scan %s' % data_glob)
-        print('This will probably not work if you use the data_plugin '
+            parts.append('-f ' + io['data_format'])
+        parts.append(data_glob)
+        print('obspy-scan ' + ' '.join(parts))
+        print()
+        print('Please use the obspy-ppsd script provided at '
+              'https://github.com/trichter/obspy-ppsd to calculate and plot '
+              'probabilistic power spectral densities.')
+        print('Suggested call to obspy-ppsd:')
+        inv = io['inventory']
+        if '?' in inv or '*' in inv:
+            inv = '"' + inv + '"'
+        print(' '.join(['obspy-ppsd add -i', inv] + parts))
+        print()
+        print('The calls will not work if you use the data_plugin '
               'configuration. '
-              'For more options check obspy-scan -h.')
+              'For more options check obspy-scan -h and obspy-ppsd -h.')
     else:
         raise ValueError('Unknown command')
     time_end = time.time()
@@ -300,7 +313,8 @@ def run_cmdline(args=None):
     p_info = sub.add_parser('info', help=msg)
     msg = 'print objects'
     p_print = sub.add_parser('print', help=msg)
-    msg = 'print suggested call for obspy-scan scipt (data availability)'
+    msg = ('print suggested call for obspy-scan script (data availability) '
+           'and obspy-ppsd script (probabilistic power spectral densities)')
     p_scan = sub.add_parser('scan', help=msg)
     msg = 'plot objects'
     p_plot = sub.add_parser('plot', help=msg)
