@@ -262,7 +262,7 @@ def run2(command, io,
         if io.get('data_format') is not None:
             parts.append('-f ' + io['data_format'])
         parts.append(data_glob)
-        print('obspy-scan ' + ' '.join(parts))
+        print('obspy-scan ' + ' '.join(['-w scan.npz -o scan.png'] + parts))
         print()
         print('Please use the obspy-ppsd script provided at '
               'https://github.com/trichter/obspy-ppsd to calculate and plot '
