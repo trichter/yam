@@ -279,9 +279,7 @@ class TqdmLoggingHandler(logging.Handler):
             msg = self.format(record)
             tqdm.tqdm.write(msg)
             self.flush()
-        except (KeyboardInterrupt, SystemExit):
-            raise
-        except:
+        except Exception:
             self.handleError(record)
 
 

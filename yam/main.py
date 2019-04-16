@@ -76,7 +76,7 @@ def load_inventory(inventory):
             channels = inventory.get_contents()['channels']
             stations = list(set(__get_station(ch) for ch in channels))
             log.info('read inventory with %d stations', len(stations))
-    except:
+    except Exception:
         log.exception('cannot read stations')
         return
     return inventory

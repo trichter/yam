@@ -266,7 +266,7 @@ def get_data(smeta, data, data_format, day, overlap=0, edge=0,
         fname = data.format(t=day, **smeta)
         try:
             stream = obspy.read(fname, data_format)
-        except:
+        except Exception:
             return
         t1 = stream[0].stats.starttime
         t2 = stream[-1].stats.endtime
@@ -274,14 +274,14 @@ def get_data(smeta, data, data_format, day, overlap=0, edge=0,
             fname = data.format(t=day - 1, **smeta)
             try:
                 stream += obspy.read(fname, data_format, starttime=day - edge)
-            except:
+            except Exception:
                 pass
         if next_day - t2 < 60:
             endtime = next_day + overlap + edge
             fname = data.format(t=next_day, **smeta)
             try:
                 stream += obspy.read(fname, data_format, endtime=endtime)
-            except:
+            except Exception:
                 pass
     if trim_and_merge:
         stream.merge(method=1, interpolation_samples=10)
