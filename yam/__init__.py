@@ -38,7 +38,7 @@ The recommended way to install yam is via `anaconda <https://docs.anaconda.com/a
 
     conda --add channels conda-forge
     conda create -n yam cartopy h5py IPython matplotlib numpy obspy scipy tqdm
-    source activate yam
+    conda activate yam
     pip install yam
 
 After that, you can run the tests with ``yam-runtests`` and check if everything is installed properly.
