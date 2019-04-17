@@ -115,7 +115,7 @@ class TestCase(unittest.TestCase):
         self.out('-c conf2.json info', 'parsing the conf')
         self.out('info', '3 stations')
         self.out('info stations', 'CX.PATCX..BHZ')
-        self.out('info data', 'example_data/CX.PATCX')
+        self.out('info data', 'BHZ__20100204T000000Z__20100205T000000Z.mseed')
         self.out('print stations', 'CX.PATCX..BHZ')
         pr = self.out('print data CX.PB06..BHZ 2010-02-05', '2010-02-05')
         self.out('print data CX.PATCX..BHZ 2010-036', '2010-02-05')
@@ -279,7 +279,10 @@ def get_data(starttime, endtime, **smeta):
     def tearDown(self):
         os.chdir(self.cwd)
         if not self.permanent_tempdir:
-            shutil.rmtree(self.tempdir)
+            try:
+                shutil.rmtree(self.tempdir)
+            except PermissionError as ex:
+                print('Cannot remove temporary directory: %s' % ex)
 
 
 def suite():
