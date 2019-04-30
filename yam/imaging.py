@@ -12,8 +12,8 @@ Common arguments in plotting functions are:
 :dpi: resolution of image file (not available for station plot)
 :xlim: limits of x axis (tuple of lag times or tuple of UTC strings)
 :ylim: limits of y axis (tuple of UTC strings or tuple of percentages)
-:line_style: style of a wiggle plot, see |Axes.plot| in matplotlib's documentation
-:line_width: line width of wiggle plot
+:*_kw: dictionary of arguments passed to calls of matplotlib methods
+    (e.g. ``plot_kw`` for arguments passed to |Axes.plot|, etc)
 
 |
 """
@@ -118,8 +118,8 @@ def plot_data(data, fname, ext='png', show=False,
 
 def plot_corr_vs_dist(
         stream, fname=None, figsize=(10, 5), ext='png', dpi=None,
-        components='ZZ', line_style='k', scale=1, dist_unit='km',
-        xlim=None, ylim=None, time_period=None):
+        components='ZZ', scale=1, dist_unit='km',
+        xlim=None, ylim=None, time_period=None, plot_kw={}):
     """
     Plot stacked correlations versus inter-station distance
 
@@ -133,6 +133,8 @@ def plot_corr_vs_dist(
     :param dist_unit: one of ``('km', 'm', 'deg')``
     :time_period: use correlations only from this time span (tuple of dates)
     """
+    plot_kw = plot_kw.copy()
+    plot_kw.setdefault('color', 'black')
     # scale relative to axis
     traces = [tr for tr in stream if
               _corr_id(tr).split('-')[0][-1] + _corr_id(tr)[-1] == components]
@@ -151,7 +153,7 @@ def plot_corr_vs_dist(
     for tr in stack:
         lag_times = _trim(tr, xlim)
         scaled_data = tr.stats.dist / dist_scale + tr.data * max_dist * scale
-        ax.plot(lag_times, scaled_data, line_style)
+        ax.plot(lag_times, scaled_data, **plot_kw)
     if fname is not None:
         fname = '%s_%s' % (fname, components)
         label = os.path.basename(fname)
@@ -168,8 +170,8 @@ def plot_corr_vs_dist(
 
 def plot_corr_vs_time_wiggle(
         stream, fname=None, figsize=(10, 5), ext='png', dpi=None,
-        xlim=None, ylim=None,
-        line_style='k', line_width=0.5, scale=20):
+        xlim=None, ylim=None, scale=20,
+        plot_kw={}):
     """
     Plot correlation wiggles versus time
 
@@ -182,6 +184,9 @@ def plot_corr_vs_time_wiggle(
 
     :param scale: scale of wiggles (default 20)
     """
+    plot_kw = plot_kw.copy()
+    plot_kw.setdefault('lw', 0.5)
+    plot_kw.setdefault('color', 'black')
     # scale relative to neighboring wiggles
     ids = {_corr_id(tr) for tr in stream}
     if len(ids) != 1:
@@ -195,7 +200,7 @@ def plot_corr_vs_time_wiggle(
     for tr in stream:
         lag_times = _trim(tr, xlim)
         scaled_data = tr.stats.starttime.matplotlib_date + tr.data * dt * scale
-        ax.plot(lag_times, scaled_data, line_style, lw=line_width)
+        ax.plot(lag_times, scaled_data, **plot_kw)
     label = '' if fname is None else os.path.basename(fname)
     ax.annotate(label, (0, 1), (10, 10), 'axes fraction', 'offset points',
                 annotation_clip=False, va='bottom')
@@ -209,7 +214,7 @@ def plot_corr_vs_time_wiggle(
 def plot_corr_vs_time(
         stream, fname=None, figsize=(10, 5), ext='png', dpi=None,
         xlim=None, ylim=None, vmax=None, cmap='RdBu_r',
-        show_stack=True, line_style='k', line_width=1):
+        show_stack=True, stack_plot_kw={}):
     """
     Plot correlations versus time
 
@@ -224,6 +229,9 @@ def plot_corr_vs_time(
     :param cmap: used colormap
     :param show_stack: show a wiggle plot of the stack at top
     """
+    stack_plot_kw = stack_plot_kw.copy()
+    stack_plot_kw.setdefault('color', 'black')
+    stack_plot_kw.setdefault('lw', 1)
     ids = {_corr_id(tr) for tr in stream}
     srs = {tr.stats.sampling_rate for tr in stream}
     lens = {len(tr) for tr in stream}
@@ -268,7 +276,7 @@ def plot_corr_vs_time(
     if show_stack:
         ax2 = fig.add_axes([0.15, 0.85, 0.75, 0.05], sharex=ax)
         stack = yam.stack.stack(stream)
-        ax2.plot(lag_times, stack[0].data, line_style, lw=line_width)
+        ax2.plot(lag_times, stack[0].data, **stack_plot_kw)
         ax2.set_ylim(-vmax, vmax)
         ax2.set_ylabel('stack')
         plt.setp(ax2.get_xticklabels(), visible=False)
@@ -355,10 +363,7 @@ def plot_velocity_change(
     Plot velocity change over time estimated from different component/station
     combinations and joint estimate.
 
-    :param results: dictionaries with stretching results
-    :param plot_kw: kwargs passed to plot call
-    :param joint_plot_kw: kwargs passed to plot call of joint estimate
-    :param legend_kw: kwargs passed to legend call
+    :param results: list of dictionaries with stretching results
     """
     plot_kw = plot_kw.copy()
     plot_kw.setdefault('marker', '.')
