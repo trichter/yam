@@ -577,7 +577,7 @@ def correlate(io, day, outkey,
     :param component_combinations: component combinations to calculate,
         tuple of strings with length two, e.g. ``('ZZ', 'ZN', 'RR')``,
         if ``'R'`` or ``'T'`` is specified, components will be rotated after
-        preprocessing, default: all component combinations (not rotated)
+        preprocessing, default: only ZZ components
     :param max_lag: max time lag in correlations in seconds
     :param keep_correlatons: write correlations into HDF5 file (dafault: False)
     :param stack: stack correlations and write stacks into HDF5 file

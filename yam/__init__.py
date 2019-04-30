@@ -22,7 +22,7 @@ growing data. Yam does not rely onto a database, but rather checks on the fly wh
 results have still to be calculated.
 Cross-correlations are written to HDF5 files via the ObsPy plugin obspyh5. Thus, correlation data can be easily
 accessed with ObsPy's |read| function after the calculation. It follows a similar processing flow as MSNoise,
-but it uses the stretching library from MIIC. (It is of course feasible to implement MWCS.)
+but it uses the stretching similar to MIIC. (It is of course feasible to implement MWCS.)
 One of its strong points is the configuration declared in a simple, but heavily commented JSON file.
 It is possible to declare similar configurations.
 A possible use case is the reprocessing of the whole dataset in a different frequency band.
