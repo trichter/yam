@@ -3,8 +3,6 @@ sudo: false
 matrix:
   include:
     - os: linux
-      env: PYTHON_VERSION=3.5 FLAGS="-v -n 2"
-    - os: linux
       env: PYTHON_VERSION=3.6 FLAGS="-v -n 2"
     - os: linux
       env: PYTHON_VERSION=3.7 FLAGS="-v -n 1"
