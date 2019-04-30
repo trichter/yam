@@ -12,7 +12,7 @@ Common arguments in plotting functions are:
 :dpi: resolution of image file (not available for station plot)
 :xlim: limits of x axis (tuple of lag times or tuple of UTC strings)
 :ylim: limits of y axis (tuple of UTC strings or tuple of percentages)
-:*_kw: dictionary of arguments passed to calls of matplotlib methods
+:\*_kw: dictionary of arguments passed to calls of matplotlib methods
     (e.g. ``plot_kw`` for arguments passed to |Axes.plot|, etc)
 
 |
@@ -362,6 +362,8 @@ def plot_velocity_change(
 
     Plot velocity change over time estimated from different component/station
     combinations and joint estimate.
+    This plot can be created from the command line with
+    ``--plottype velocity``.
 
     :param results: list of dictionaries with stretching results
     """

@@ -517,7 +517,7 @@ def plot(io, key, plottype=None, seedid=None, day=None, prep_kw={},
     :param key: key of objects to plot, or one of stations, data, prepdata
     :param plottype: plot type to use
         (non default values are ``'vs_dist'`` and ``'wiggle'`` for
-        correlation plots)
+        correlation plots, ``'velocity'`` for plots of stretching results)
     :param seedid: seed id of a  channel (for data or prepdata)
     :param day: |UTC| object with day (for data or prepdata)
     :param dict prep_kw: options passed to preprocess (for prepdata only)
