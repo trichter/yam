@@ -375,19 +375,26 @@ def plot_velocity_change(
     tw = results[0]['tw']
     fig = plt.figure(figsize=figsize)
     ax = fig.add_subplot(111)
-    if plot_kw is not None:
-        if 'group' in results[0]:
-            labels = [res['group'].replace('/', '_') for res in results]
-            if len(labels) == 1:
-                labels = [labels[0].rsplit('_', 1)[-1]]
-            else:
-                if '_' in labels[0]:
-                    label_parts = [l.split('_') for l in labels]
-                    label_parts = zip(*[lps for lps in zip(*label_parts)
-                                        if len(set(lps)) != 1])
-                    labels = ['_'.join(lp) for lp in label_parts]
+    label_stations = None
+    if 'group' in results[0]:
+        labels = [res['group'].replace('/', '_') for res in results]
+        if len(labels) == 1:
+            labels = [labels[0].rsplit('_', 1)[-1]]
+            if '_' in labels[0]:
+                label_stations = labels[0].rsplit('_', 2)[-2]
         else:
-            labels = [None] * len(results)
+            if labels[0].count('_') >= 2:
+                label_parts = [l.split('_')[-2:] for l in labels]
+                lp1, lp2 = zip(*label_parts)
+                if len(set(lp1)) == 1:
+                    label_stations = lp1[0]
+                    labels = lp2
+                else:
+                    labels = ['_'.join(lp) for lp in label_parts]
+        assert len(labels) == len(results)
+    else:
+        labels = [None] * len(results)
+    if plot_kw is not None:
         for res, label in zip(results, labels):
             x = [UTC(t).datetime for t in res['times']]
             y = res['velchange_vs_time']
@@ -407,6 +414,8 @@ def plot_velocity_change(
         label = label_tw
     else:
         label = os.path.basename(fname) + '_' + label_tw
+    if label_stations and label_stations not in label:
+        label = label + '_' + label_stations
     ax.annotate(label, (0, 1), (10, 10), 'axes fraction', 'offset points',
                 annotation_clip=False, va='bottom')
     if ylim:
