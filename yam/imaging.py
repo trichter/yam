@@ -282,8 +282,7 @@ def plot_corr_vs_time(
 
 def plot_sim_mat(res, fname=None, figsize=(10, 5), ext='png', dpi=None,
                  xlim=None, ylim=None, vmax=None, cmap='hot_r',
-                 show_line=False, line_style='b', line_width=2,
-                 time_window=None):
+                 show_line=False, line_plot_kw={}):
     """
     Plot similarity matrices
 
@@ -296,9 +295,10 @@ def plot_sim_mat(res, fname=None, figsize=(10, 5), ext='png', dpi=None,
     :param vmax: maximum value in colormap
     :param cmap: used colormap
     :param show_line: show line connecting best correlations for each time
-    :param time_window: do not create figures for each time window in the
-        results dictionary, but only for one time window with given index
     """
+    line_plot_kw = line_plot_kw.copy()
+    line_plot_kw.setdefault('color', 'b')
+    line_plot_kw.setdefault('lw', 2)
     tw = res['tw']
     fig = plt.figure(figsize=figsize)
     ax = fig.add_subplot(111)
@@ -316,11 +316,12 @@ def plot_sim_mat(res, fname=None, figsize=(10, 5), ext='png', dpi=None,
     if show_line:
         s = res['velchange_vs_time']
         s = _add_value(s, no_data, value=0, masked=True)
-        ax.plot(x, s, line_style, lw=line_width)
+        ax.plot(x, s, **line_plot_kw)
     ax.set_xlabel('date')
     ax.set_ylabel('velocity change (%)')
     fig.autofmt_xdate()
     fig.colorbar(mesh, shrink=0.5)
+    # set label and  limits
     label_tw = 'tw_{:05.1f}s-{:05.1f}s'.format(*tw)
     if fname is None:
         label = label_tw
