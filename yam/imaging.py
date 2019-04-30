@@ -29,6 +29,7 @@ from obspy import UTCDateTime as UTC
 
 from yam.util import _corr_id, _trim, _trim_time_period
 import yam.stack
+import yam.stretch
 
 
 def _get_times_no_data(x):
@@ -337,6 +338,81 @@ def plot_sim_mat(res, fname=None, figsize=(10, 5), ext='png', dpi=None,
     t0 = x2[0] if t0 is None else UTC(t0).matplotlib_date
     t1 = x2[-1] if t1 is None else UTC(t1).matplotlib_date
     ax.set_xlim(t0, t1)
+    if fname is not None:
+        fig.savefig(fname + '.' + ext, dpi=dpi)
+    return fig
+
+
+def plot_velocity_change(
+        results, fname=None, figsize=(10, 5), ext='png', dpi=None,
+        xlim=None, ylim=None, plot_kw={}, joint_plot_kw={}, legend_kw={}):
+    """
+    Plot velocity change over time
+
+    .. image:: _static/velocity_change.png
+       :width: 30%
+
+    Plot velocity change over time estimated from different component/station
+    combinations and joint estimate.
+
+    :param results: dictionaries with stretching results
+    :param plot_kw: kwargs passed to plot call
+    :param joint_plot_kw: kwargs passed to plot call of joint estimate
+    :param legend_kw: kwargs passed to legend call
+    """
+    plot_kw = plot_kw.copy()
+    plot_kw.setdefault('marker', '.')
+    plot_kw.setdefault('ls', '')
+    joint_plot_kw = joint_plot_kw.copy()
+    joint_plot_kw.setdefault('color', 'k')
+    if len(results) == 0:
+        return
+    tw = results[0]['tw']
+    fig = plt.figure(figsize=figsize)
+    ax = fig.add_subplot(111)
+    if plot_kw is not None:
+        if 'group' in results[0]:
+            labels = [res['group'].replace('/', '_') for res in results]
+            if len(labels) == 1:
+                labels = [labels[0].rsplit('_', 1)[-1]]
+            else:
+                if '_' in labels[0]:
+                    label_parts = [l.split('_') for l in labels]
+                    label_parts = zip(*[lps for lps in zip(*label_parts)
+                                        if len(set(lps)) != 1])
+                    labels = ['_'.join(lp) for lp in label_parts]
+        else:
+            labels = [None] * len(results)
+        for res, label in zip(results, labels):
+            x = [UTC(t).datetime for t in res['times']]
+            y = res['velchange_vs_time']
+            ax.plot(x, y, label=label, **plot_kw)
+    if len(results) > 1 and joint_plot_kw is not None:
+        res = yam.stretch.average_dicts(results)
+        x = [UTC(t).datetime for t in res['times']]
+        y = res['velchange_vs_time']
+        ax.plot(x, y, label='joint', **joint_plot_kw)
+    ax.set_xlabel('date')
+    ax.set_ylabel('velocity change (%)')
+    if legend_kw is not None:
+        ax.legend(**legend_kw)
+    # set label and  limits
+    label_tw = 'tw_{:05.1f}s-{:05.1f}s'.format(*tw)
+    if fname is None:
+        label = label_tw
+    else:
+        label = os.path.basename(fname) + '_' + label_tw
+    ax.annotate(label, (0, 1), (10, 10), 'axes fraction', 'offset points',
+                annotation_clip=False, va='bottom')
+    if ylim:
+        if isinstance(ylim, (float, int)):
+            ylim = (-ylim, ylim)
+        ax.set_ylim(ylim)
+    t0, t1 = (None, None) if xlim is None else xlim
+    t0 = x[0] if t0 is None else UTC(t0).matplotlib_date
+    t1 = x[-1] if t1 is None else UTC(t1).matplotlib_date
+    ax.set_xlim(t0, t1)
+    fig.autofmt_xdate()
     if fname is not None:
         fig.savefig(fname + '.' + ext, dpi=dpi)
     return fig

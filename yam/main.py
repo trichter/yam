@@ -384,7 +384,7 @@ def run_cmdline(args=None):
     p_correlate.add_argument('--parallel-inner-loop', action='store_true',
                              help=msg)
     msg = 'type of plot (a default is chosen for the given key)'
-    choices = ('vs_dist', 'wiggle')
+    choices = ('vs_dist', 'wiggle', 'velocity')
     p_plot.add_argument('--plottype', help=msg, choices=choices)
     msg = 'specify some plot options (dictionary in JSON format)'
     p_plot.add_argument('--plot-options', default=SUPPRESS, type=json.loads,

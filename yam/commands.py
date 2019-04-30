@@ -542,6 +542,8 @@ def plot(io, key, plottype=None, seedid=None, day=None, prep_kw={},
             pt = 'corr_vs_time'
         elif not is_corr and plottype is None:
             pt = 'sim_mat'
+        elif not is_corr and plottype == 'velocity':
+            pt = 'velocity_change'
         else:
             raise ParseError('Combination of key and plottype not supported')
 
@@ -564,6 +566,10 @@ def plot(io, key, plottype=None, seedid=None, day=None, prep_kw={},
             stream = obspy.read(fname2, 'H5', group=key)
             fname = bname + '_' + key.replace('/', '_')
             plot_(stream, fname, **kw)
+        elif pt == 'velocity_change':
+            results = [res for task, res in _iter_h5(io, key)]
+            fname = bname + '_' + key.replace('/', '_')
+            plot_(results, fname, **kw)
         else:
             for task, res in _iter_h5(io, key):
                 fname = bname + task.replace('/', '_')
