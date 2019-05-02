@@ -13,7 +13,10 @@ Common arguments in plotting functions are:
 :xlim: limits of x axis (tuple of lag times or tuple of UTC strings)
 :ylim: limits of y axis (tuple of UTC strings or tuple of percentages)
 :\*_kw: dictionary of arguments passed to calls of matplotlib methods
-    (e.g. ``plot_kw`` for arguments passed to |Axes.plot|, etc)
+    (e.g. ``plot_kw`` for arguments passed to |Axes.plot|, etc). Some of these
+    dictionaries might be set to ``None`` to suppress the corresponding feature
+    (e.g. set ``stack_plot_kw=None`` to not plot the stack of all traces in
+    ``plot_corr_vs_time()``).
 
 |
 """
@@ -213,8 +216,7 @@ def plot_corr_vs_time_wiggle(
 
 def plot_corr_vs_time(
         stream, fname=None, figsize=(10, 5), ext='png', dpi=None,
-        xlim=None, ylim=None, vmax=None, cmap='RdBu_r',
-        show_stack=True, stack_plot_kw={}):
+        xlim=None, ylim=None, vmax=None, cmap='RdBu_r', stack_plot_kw={}):
     """
     Plot correlations versus time
 
@@ -227,11 +229,7 @@ def plot_corr_vs_time(
 
     :param vmax: maximum value in colormap
     :param cmap: used colormap
-    :param show_stack: show a wiggle plot of the stack at top
     """
-    stack_plot_kw = stack_plot_kw.copy()
-    stack_plot_kw.setdefault('color', 'black')
-    stack_plot_kw.setdefault('lw', 1)
     ids = {_corr_id(tr) for tr in stream}
     srs = {tr.stats.sampling_rate for tr in stream}
     lens = {len(tr) for tr in stream}
@@ -273,7 +271,10 @@ def plot_corr_vs_time(
     ax.set_xlabel('time (s)')
     ax.yaxis_date()
     ax_ano = ax
-    if show_stack:
+    if stack_plot_kw is not None:
+        stack_plot_kw = stack_plot_kw.copy()
+        stack_plot_kw.setdefault('color', 'black')
+        stack_plot_kw.setdefault('lw', 1)
         ax2 = fig.add_axes([0.15, 0.85, 0.75, 0.05], sharex=ax)
         stack = yam.stack.stack(stream)
         ax2.plot(lag_times, stack[0].data, **stack_plot_kw)
@@ -305,9 +306,6 @@ def plot_sim_mat(res, fname=None, figsize=(10, 5), ext='png', dpi=None,
     :param cmap: used colormap
     :param show_line: show line connecting best correlations for each time
     """
-    line_plot_kw = line_plot_kw.copy()
-    line_plot_kw.setdefault('color', 'b')
-    line_plot_kw.setdefault('lw', 2)
     tw = res['tw']
     fig = plt.figure(figsize=figsize)
     ax = fig.add_subplot(111)
@@ -323,6 +321,9 @@ def plot_sim_mat(res, fname=None, figsize=(10, 5), ext='png', dpi=None,
     data = _add_value(data, no_data, value=0, masked=True)
     mesh = ax.pcolormesh(x2, y2, data, cmap=cmap, vmin=0, vmax=vmax)
     if show_line:
+        line_plot_kw = line_plot_kw.copy()
+        line_plot_kw.setdefault('color', 'b')
+        line_plot_kw.setdefault('lw', 2)
         s = res['velchange_vs_time']
         s = _add_value(s, no_data, value=0, masked=True)
         ax.plot(x, s, **line_plot_kw)
@@ -367,11 +368,6 @@ def plot_velocity_change(
 
     :param results: list of dictionaries with stretching results
     """
-    plot_kw = plot_kw.copy()
-    plot_kw.setdefault('marker', '.')
-    plot_kw.setdefault('ls', '')
-    joint_plot_kw = joint_plot_kw.copy()
-    joint_plot_kw.setdefault('color', 'k')
     if len(results) == 0:
         return
     tw = results[0]['tw']
@@ -397,11 +393,16 @@ def plot_velocity_change(
     else:
         labels = [None] * len(results)
     if plot_kw is not None:
+        plot_kw = plot_kw.copy()
+        plot_kw.setdefault('marker', '.')
+        plot_kw.setdefault('ls', '')
         for res, label in zip(results, labels):
             x = [UTC(t).datetime for t in res['times']]
             y = res['velchange_vs_time']
             ax.plot(x, y, label=label, **plot_kw)
     if len(results) > 1 and joint_plot_kw is not None:
+        joint_plot_kw = joint_plot_kw.copy()
+        joint_plot_kw.setdefault('color', 'k')
         res = yam.stretch.average_dicts(results)
         x = [UTC(t).datetime for t in res['times']]
         y = res['velchange_vs_time']
