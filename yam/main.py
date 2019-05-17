@@ -201,6 +201,8 @@ def run2(command, io,
         for k in list(args.keys()):
             if k.startswith('plot_'):
                 args.pop(k)
+    if command in ('correlate', 'stack', 'stretch'):
+        args.setdefault('dataset_kwargs', io.get('dataset_kwargs'))
     # Start main routine
     if command == 'correlate':
         kw = _get_kwargs(correlate, corrid)

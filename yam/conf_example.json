@@ -44,7 +44,11 @@
         "corr": "corr.h5",
         "stack": "stack.h5",
         "stretch": "stretch.h5",
-        "plot": "plots"
+        "plot": "plots",
+
+        # set data type, compression and similar when cearting datasets,
+        # see h5py create_dataset function for possible options
+        "dataset_kwargs": {"dtype": "float16", "compression": null}
         },
 
 

@@ -44,9 +44,9 @@ def start_correlate(io,
                     startdate='1990-01-01', enddate='2020-01-01',
                     njobs=None,
                     parallel_inner_loop=False,
-                    dtype='float16',
                     keep_correlations=False,
                     stack='1d',
+                    dataset_kwargs=None,
                     **kwargs):
     """
     Start correlation
@@ -64,9 +64,16 @@ def start_correlate(io,
         Useful for a datset with many stations.
     :param dtype: data type for storing correlations
         (default: float16 - half precision)
+    :param dataset_kwargs: options passed to obspyh5 resp. h5py when creating
+         a new dataset,
+         e.g. `dataset_kwargs={'compression':'gzip'}`.
+         See create_dataset in h5py for more options.
+         By default the dtype is set to `'float16'`.
     :param keep_correlations,stack,\*\*kwargs: all other kwargs are passed to
         `~yam.correlate.correlate()` function
     """
+    if dataset_kwargs is None:
+        dataset_kwargs = {}
     if filter_inventory:
         log.debug('filter inventory')
         io['inventory'] = io['inventory'].select(**filter_inventory)
@@ -94,13 +101,13 @@ def start_correlate(io,
         log.info('do work sequentially')
         for task in tqdm.tqdm(tasks, total=len(tasks)):
             result = do_work(task)
-            _write_corr(result, io, dtype=dtype)
+            _write_corr(result, io, **dataset_kwargs)
     else:
         pool = multiprocessing.Pool(njobs)
         log.info('do work parallel (%d cores)', pool._processes)
         for result in tqdm.tqdm(pool.imap_unordered(do_work, tasks),
                                 total=len(tasks)):
-            _write_corr(result, io, dtype=dtype)
+            _write_corr(result, io, **dataset_kwargs)
         pool.close()
         pool.join()
 
@@ -127,7 +134,9 @@ def _stack_wrapper(groupnames, fname, outkey, **kwargs):
 
 
 def start_stack(io, key, outkey, subkey='', njobs=None,
-                starttime=None, endtime=None, **kwargs):
+                starttime=None, endtime=None,
+                dataset_kwargs=None,
+                **kwargs):
     """
     Start stacking
 
@@ -138,9 +147,17 @@ def start_stack(io, key, outkey, subkey='', njobs=None,
     :param njobs: number of cores to use for computation,
         default: None -- use all available cores
     :param starttime,endtime: constrain start and end dates
+    :param dataset_kwargs: options passed to obspyh5 resp. h5py when creating
+         a new dataset,
+         e.g. `dataset_kwargs={'compression':'gzip'}`.
+         See create_dataset in h5py for more options.
+         By default the dtype is set to `'float16'`.
     :param \*\*kwargs: all other kwargs are passed to
         `yam.stack.stack()` function
     """
+    if dataset_kwargs is None:
+        dataset_kwargs = {}
+    dataset_kwargs.setdefault('dtype', 'float16')
     fname = io['stack'] if 's' in _analyze_key(key) else io['corr']
     tasks = _get_existent(fname, key + subkey, 3)
     done_tasks = [t.replace(outkey, key) for t in
@@ -204,10 +221,11 @@ def start_stack(io, key, outkey, subkey='', njobs=None,
                           axis=0)
             tr_stack = obspy.Trace(data, header=traces[0].stats)
             tr_stack.stats.num = num
-            tr_stack.write(io['stack'], 'H5', mode='a')
+            tr_stack.write(io['stack'], 'H5', mode='a', **dataset_kwargs)
         else:
             for stack_stream in results:
-                stack_stream.write(io['stack'], 'H5', mode='a')
+                stack_stream.write(io['stack'], 'H5', mode='a',
+                                   **dataset_kwargs)
 
 
 def _stretch_wrapper(groupnames, fname, outkey, filter=None,
@@ -238,7 +256,8 @@ def _stretch_wrapper(groupnames, fname, outkey, filter=None,
 
 
 def start_stretch(io, key, subkey='', njobs=None, reftrid=None,
-                  starttime=None, endtime=None, dtype='float16',
+                  starttime=None, endtime=None,
+                  dataset_kwargs=None,
                   **kwargs):
     """
     Start stretching
@@ -252,11 +271,16 @@ def start_stretch(io, key, subkey='', njobs=None, reftrid=None,
         is specified. Key to load the reference trace from, e.g. `'c1_s'`,
         it can be created by a command similar to `yam stack c1 ''`.
     :param starttime,endtime: constrain start and end dates
-    :param dtype: data type for storing similarity matrices
-        (default: float16 - half precision)
+    :param dataset_kwargs: options passed to obspyh5 resp. h5py when creating
+         a new dataset,
+         e.g. `dataset_kwargs={'compression':'gzip'}`.
+         See create_dataset in h5py for more options.
+         By default the dtype is set to `'float16'`.
     :param \*\*kwargs: all other kwargs are passed to
         `stretch_wrapper()` function
     """
+    if dataset_kwargs is None:
+        dataset_kwargs = {}
     fname = _get_fname(io, key)
     outkey = kwargs['outkey']
     tasks = _get_existent(fname, key + subkey, 3)
@@ -302,7 +326,7 @@ def start_stretch(io, key, subkey='', njobs=None, reftrid=None,
             pool.join()
         result = yam.stretch.join_dicts(results)
         if result is not None:
-            write_dict(result, io['stretch'], dtype=dtype)
+            write_dict(result, io['stretch'], **dataset_kwargs)
 
 
 def _start_ipy(obj):
