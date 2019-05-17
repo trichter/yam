@@ -1,6 +1,7 @@
 dev:
   * add new plottype: velocity change versus time of different station/component combinations together with joint estimate
   * allow to set compression and other options when creating a dataset
+  * allow to set libver for new HDF5 files (default is 'earliest' for best backwards compatibility)
 v0.6.0:
   * yam can now be used on Windows, tests are passing, but multirpoccesing is probably not yet working (see issue #4)
 v0.5.0:

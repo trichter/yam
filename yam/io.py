@@ -19,7 +19,7 @@ INDEX_STRETCH = ('{key}/{network1}.{station1}-{network2}.{station2}/'
 obspyh5.set_index(INDEX)
 
 
-def write_dict(dict_, fname, mode='a', libver='latest', dtype='float16',
+def write_dict(dict_, fname, mode='a', libver='earliest', dtype='float16',
                **kwargs):
     """
     Write similarity matrix into HDF5 file
