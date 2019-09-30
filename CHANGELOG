@@ -1,18 +1,20 @@
 dev:
-  * add new plottype: velocity change versus time of different station/component combinations together with joint estimate
+  * add new plottype: velocity change versus time of different station/component combinations
+    together with joint estimate
   * allow to set compression and other options when creating a dataset
   * allow to set libver for new HDF5 files (default is 'earliest' for best backwards compatibility)
 v0.6.0:
-  * yam can now be used on Windows, tests are passing, but multirpoccesing is probably not yet working (see issue #4)
+  * yam can now be used on Windows, tests are passing, but multiproccesing is not yet working
+    (see issue #4)
 v0.5.0:
   * major refactoring of stretch module, some config options for stretching are renamed,
-    the resulting dictionaries changed in a backwards incompatible way,
-    please (a) use yam version < 0.5 or (b) adapt config file and run yam stretch again for any existing project
+    the resulting dictionaries changed in a backwards incompatible way, please (a) use
+    yam version < 0.5 or (b) adapt config file and run yam stretch again for any existing project
 v0.4.3:
   * add demean option (before filtering)
   * add plugin option for timenorm
   * refactor timenorm function, some kwargs are deprecated
-  * timenorm and spectral_whitening are now working with Trace objects directly (instead of numpy arrays)
+  * timenorm and spectral_whitening are now working with Trace objects (instead of numpy arrays)
   * add dpi option for most plots to set resolution of saved images
   * more verbose error message if coordinates of station cannot be found
   * fix: guarantee same length of traces which are correlated (necessary if tolerance_shift is set)
