@@ -1,24 +1,42 @@
 # Copyright 2017-2019 Tom Eulenfeld, MIT license
 """Preprocessing and correlation"""
+import yam.stack
+from yam.util import _filter, IterTime, smooth as smooth_func, _time2sec
+from obspy.signal.cross_correlation import correlate as obscorr
 from functools import partial
 import itertools
 import logging
 import multiprocessing
-
+import os
 import numpy as np
-from numpy.fft import rfft, irfft, rfftfreq
 import obspy
 from obspy.core import Stream
 from obspy.geodetics import gps2dist_azimuth
-from obspy.signal.cross_correlation import correlate as obscorr
-from scipy.fftpack import fft, ifft, fftshift, ifftshift, next_fast_len
+import scipy.signal
 from scipy.signal import freqz, iirfilter, hilbert
 
-from yam.util import _filter, IterTime, smooth as smooth_func, _time2sec
-import yam.stack
+_USE_FFTWS = 'YAM_NO_FFTW' not in os.environ
+if _USE_FFTWS:
+    try:
+        import pyfftw
+        pyfftw.interfaces.cache.enable()
+        pyfftw.interfaces.cache.set_keepalive_time(100)
+    except ImportError:
+        _USE_FFTWS = False
+
+if _USE_FFTWS:
+    scipy.fftpack = pyfftw.interfaces.scipy_fftpack
+    np.fft = pyfftw.interfaces.numpy_fft
+    from pyfftw.interfaces.scipy_fftpack import (fft, ifft, fftshift,
+                                                 ifftshift, next_fast_len)
+    from pyfftw.interfaces.numpy_fft import rfft, irfft, rfftfreq
+else:
+    from numpy.fft import rfft, irfft, rfftfreq
+    from scipy.fftpack import fft, ifft, fftshift, ifftshift, next_fast_len
 
 
 log = logging.getLogger('yam.correlate')
+log.info('do not' * (not _USE_FFTWS) + 'use pyfftw library')
 
 
 def start_parallel_jobs_inner_loop(tasks, do_work, njobs=1):
@@ -357,7 +375,7 @@ def _prep1(target_sr, tolerance_shift, interpolate_options,
     if remove_response:
         tr.remove_response(inventory, **remove_response_options)
     if demean:
-         tr.detrend('demean')
+        tr.detrend('demean')
     if filter is not None:
         _filter(tr, filter)
     return tr

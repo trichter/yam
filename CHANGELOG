@@ -1,4 +1,5 @@
 dev:
+  * use pyfftw by default if it is installed
   * add new plottype: velocity change versus time of different station/component combinations
     together with joint estimate
   * allow to set compression and other options when creating a dataset
