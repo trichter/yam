@@ -118,8 +118,7 @@ def run(command, conf=None, tutorial=False, less_data=False, pdb=False,
 
         def info(type, value, tb):
             traceback.print_exception(type, value, tb)
-            print
-            # ...then start the debugger in post-mortem mode.
+            print()
             pdb.pm()
 
         sys.excepthook = info
