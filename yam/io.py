@@ -13,6 +13,7 @@ from yam.util import _analyze_key, _get_fname
 
 INDEX = ('{key}/{network1}.{station1}-{network2}.{station2}/'
          '{location1}.{channel1}-{location2}.{channel2}/'
+         '{starttime.year}-{starttime.month:02d}/'
          '{starttime.datetime:%Y-%m-%dT%H:%M}')
 INDEX_STRETCH = ('{key}/{network1}.{station1}-{network2}.{station2}/'
                  '{location1}.{channel1}-{location2}.{channel2}')
@@ -52,7 +53,7 @@ def write_dict(dict_, fname, mode='a', libver='earliest', dtype='float16',
                 group.create_dataset(key, data=val)
 
 
-def _get_existent(fname, root, level):
+def _get_existent(fname, root, level=None):
     """
     Return existing keys at level in HDF5 file
     """
@@ -70,6 +71,8 @@ def _get_existent(fname, root, level):
         for n in group:
             visit(group[n], level - 1)
     with h5py.File(fname, 'r') as f:
+        if level is None:
+            level = f.attrs['index'].count('/') + 1
         try:
             g = f[root]
         except KeyError:

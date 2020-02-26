@@ -82,10 +82,10 @@ def start_correlate(io,
     done_tasks = None
     if stack is not None:
         key2 = kwargs['outkey'] + '_s' + stack
-        done_tasks = [t[-16:-6] for t in _get_existent(io['stack'], key2, 4)]
+        done_tasks = [t[-16:-6] for t in _get_existent(io['stack'], key2)]
     if keep_correlations:
         key2 = kwargs['outkey']
-        done_tasks2 = [t[-16:-6] for t in _get_existent(io['corr'], key2, 4)]
+        done_tasks2 = [t[-16:-6] for t in _get_existent(io['corr'], key2)]
         if done_tasks is None:
             done_tasks = done_tasks2
         else:
@@ -165,7 +165,7 @@ def start_stack(io, key, outkey, subkey='', njobs=None,
     tasks = _todo_tasks(tasks, done_tasks)
     length = kwargs.get('length')
     for task in tqdm.tqdm(tasks, total=len(tasks)):
-        subtasks = [t for t in _get_existent(fname, task, 4) if
+        subtasks = [t for t in _get_existent(fname, task) if
                     (starttime is None or t[-16:] >= starttime) and
                     (endtime is None or t[-16:] <= endtime)]
         if length is None and njobs != 1:
@@ -298,7 +298,7 @@ def start_stretch(io, key, subkey='', njobs=None, reftrid=None,
             if len(reftr) != 1:
                 raise NotImplementedError('Reference must be single trace')
             reftr = reftr[0]
-        subtasks = [t for t in _get_existent(fname, task, 4) if
+        subtasks = [t for t in _get_existent(fname, task) if
                     (starttime is None or t[-16:] >= starttime) and
                     (endtime is None or t[-16:] <= endtime)]
         if reftr is None:
@@ -375,7 +375,7 @@ def _print_info_helper(key, io):
         if is_stretch:
             o = '%s: %d combs' % (subkey, len(keys2))
         else:
-            keys3 = _get_existent(fname, key, 4)
+            keys3 = _get_existent(fname, key)
             o = ('%s: %d combs, %d corrs' %
                  (subkey, len(keys2), len(keys3)))
         print2(o)
@@ -443,7 +443,7 @@ def info(io, key=None, subkey='', config=None, **unused_kwargs):
     else:
         is_stretch = 't' in _analyze_key(key)
         fname = _get_fname(io, key)
-        level = 3 if is_stretch else 4
+        level = 3 if is_stretch else None
         for line in _get_existent(fname, key + subkey, level):
             print2(line)
 

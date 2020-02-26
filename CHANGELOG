@@ -1,4 +1,6 @@
 dev:
+  * index for cross-correlation is nested one level deeper now to not have
+    too many datsets in one group for cross-correlations of 10min data pieces
   * use pyfftw by default if it is installed
   * add new plottype: velocity change versus time of different station/component combinations
     together with joint estimate

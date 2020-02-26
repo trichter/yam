@@ -176,7 +176,8 @@ def get_data(starttime, endtime, **smeta):
         self.out('info', 'c1_s1d: 7 combs')
         self.out('info', 'c1a_s1d: 3 combs')
         self.out('info', 'cauto: 2 combs')
-        cauto_info = self.out('info cauto', 'CX.PATCX/.BHZ-.BHZ/2010-02-05')
+        cauto_info = self.out('info cauto',
+                              'CX.PATCX/.BHZ-.BHZ/2010-02/2010-02-05')
         self.out('info c1_s1d/CX.PB06-CX.PB06/.BHZ-.BHZ', 'CX.PB06-CX.PB06')
         self.out('print cauto', '1201 samples')
         expected = '%d Trace' % (2 if self.less_data else 11)
