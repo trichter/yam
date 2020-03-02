@@ -53,22 +53,27 @@ def write_dict(dict_, fname, mode='a', libver='earliest', dtype='float16',
                 group.create_dataset(key, data=val)
 
 
-def _get_existent(fname, root, level=None):
+def _get_existent(fname, root, level=None, max_count=None):
     """
     Return existing keys at level in HDF5 file
     """
     if not os.path.exists(fname):
         return []
     done = []
+    count = 0
 
     def visit(group, level):
+        nonlocal count
         if level == 0:
             done.append(group.name)
             return
         elif level == 1:
             done.extend([group.name + '/' + subg for subg in group])
+            count += 1
             return
         for n in group:
+            if max_count is not None and max_count <= count:
+                return
             visit(group[n], level - 1)
     with h5py.File(fname, 'r') as f:
         if level is None:

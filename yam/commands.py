@@ -363,6 +363,7 @@ def _get_data_files(data):
 
 
 def _print_info_helper(key, io):
+    max_count = 10000
     print2 = _get_print2()
     is_stretch = key == 'tstretch'
     fname = _get_fname(io, key)
@@ -375,9 +376,10 @@ def _print_info_helper(key, io):
         if is_stretch:
             o = '%s: %d combs' % (subkey, len(keys2))
         else:
-            keys3 = _get_existent(fname, key)
-            o = ('%s: %d combs, %d corrs' %
-                 (subkey, len(keys2), len(keys3)))
+            keys3 = _get_existent(fname, key, max_count=max_count+1)
+            o = ('%s: %d combs, %s%s corrs' %
+                 (subkey, len(keys2), (len(keys3) > max_count) * '>',
+                  min(max_count, len(keys3))))
         print2(o)
 
 
