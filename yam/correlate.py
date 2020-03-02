@@ -39,8 +39,8 @@ log = logging.getLogger('yam.correlate')
 log.info('do not' * (not _USE_FFTWS) + 'use pyfftw library')
 
 
-def start_parallel_jobs_inner_loop(tasks, do_work, njobs=1):
-    if njobs == 1:
+def start_parallel_jobs_inner_loop(tasks, do_work, njobs=0):
+    if njobs == 0:
         results = [do_work(task) for task in tasks]
     else:
         pool = multiprocessing.Pool(njobs)

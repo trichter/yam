@@ -57,7 +57,7 @@ def start_correlate(io,
     :param str startdate,enddate: start and end date as strings
     : param njobs: number of cores to use for computation, days are computed
         parallel, this might consume much memory, default: None -- use all
-        available cores
+        available cores, set njobs to 0 for sequential processing
     :param parallel_inner_loop: Run inner loops parallel instead of outer loop
         (preproccessing of different stations and correlation of different
         pairs versus processing of different days).
@@ -95,9 +95,9 @@ def start_correlate(io,
     kwargs.update({'keep_correlations': keep_correlations, 'stack': stack})
     if parallel_inner_loop:
         kwargs['njobs'] = njobs
-        njobs = 1
+        njobs = 0
     do_work = functools.partial(correlate, io, **kwargs)
-    if njobs == 1:
+    if njobs == 0:
         log.info('do work sequentially')
         for task in tqdm.tqdm(tasks, total=len(tasks)):
             result = do_work(task)
@@ -145,7 +145,8 @@ def start_stack(io, key, outkey, subkey='', njobs=None,
     :param outkey: key to write stacked correlations to
     :param subkey: only use a part of the correlations
     :param njobs: number of cores to use for computation,
-        default: None -- use all available cores
+        default: None -- use all available cores,
+        set njobs to 0 for sequential processing
     :param starttime,endtime: constrain start and end dates
     :param dataset_kwargs: options passed to obspyh5 resp. h5py when creating
          a new dataset,
@@ -168,7 +169,7 @@ def start_stack(io, key, outkey, subkey='', njobs=None,
         subtasks = [t for t in _get_existent(fname, task) if
                     (starttime is None or t[-16:] >= starttime) and
                     (endtime is None or t[-16:] <= endtime)]
-        if length is None and njobs != 1:
+        if length is None and njobs != 0:
             step = 1000
             subtask_chunks = [tuple(subtasks[i:i + step]) for i in
                               range(0, len(subtasks), step)]
@@ -198,7 +199,7 @@ def start_stack(io, key, outkey, subkey='', njobs=None,
         do_work = functools.partial(_stack_wrapper, fname=fname, outkey=outkey,
                                     **kwargs)
         results = []
-        if njobs == 1 or len(subtask_chunks) == 1:
+        if njobs == 0 or len(subtask_chunks) == 1:
             log.debug('do work sequentially')
             for stask in tqdm.tqdm(subtask_chunks, total=len(subtask_chunks)):
                 result = do_work(stask)
@@ -266,7 +267,8 @@ def start_stretch(io, key, subkey='', njobs=None, reftrid=None,
     :param key:  key to load correlations from
     :param subkey: only use a part of the correlations
     :param njobs: number of cores to use for computation,
-        default: None -- use all available cores
+        default: None -- use all available cores,
+        set njobs to 0 for sequential processing
     :param reftrid: Parallel processing is only possible when this parameter
         is specified. Key to load the reference trace from, e.g. `'c1_s'`,
         it can be created by a command similar to `yam stack c1 ''`.
@@ -310,7 +312,7 @@ def start_stretch(io, key, subkey='', njobs=None, reftrid=None,
         do_work = functools.partial(_stretch_wrapper, fname=fname,
                                     reftr=reftr, **kwargs)
         results = []
-        if njobs == 1 or len(subtask_chunks) == 1:
+        if njobs == 0 or len(subtask_chunks) == 1:
             log.debug('do work sequentially')
             for stask in tqdm.tqdm(subtask_chunks, total=len(subtask_chunks)):
                 result = do_work(stask)

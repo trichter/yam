@@ -1,4 +1,6 @@
 dev:
+  * use --njobs 0 for sequential processing (before it was 1)
+    and --njobs 1 for processing of each element in a new process
   * index for cross-correlation is nested one level deeper now to not have
     too many datsets in one group for cross-correlations of 10min data pieces
   * use pyfftw by default if it is installed
