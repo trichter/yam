@@ -10,5 +10,6 @@ Yet another monitoring tool using correlations of ambient noise
 #### Resources
 
 * [Documentation](http://yam.readthedocs.io)
-* Showcase / advanced tutorial -> [notebook](http://nbviewer.jupyter.org/github/trichter/notebooks/blob/master/yam_velocity_variations_patcx/processing_patcx.ipynb)
+* Example: Inter-station cross-correlations -> [notebook](https://nbviewer.jupyter.org/github/trichter/notebooks/blob/master/yam_xcorr_ipoc/xcorr_ipoc.ipynb)
+* Showcase / advanced tutorial: Monitoring seismic velocity -> [notebook](http://nbviewer.jupyter.org/github/trichter/notebooks/blob/master/yam_velocity_variations_patcx/processing_patcx.ipynb)
 * Get help at the [seistools](https://lserv.uni-jena.de/mailman/listinfo/seistools) mailing list
