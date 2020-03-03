@@ -411,7 +411,7 @@ def preprocess(stream, day=None, inventory=None,
                spectral_whitening_options=None,
                downsample=None, tolerance_shift=None, interpolate_options=None,
                decimate=None,
-               njobs=1):
+               njobs=0):
     """
     Preprocess stream of 1 day
 
@@ -572,7 +572,7 @@ def correlate(io, day, outkey,
               max_lag=100,
               keep_correlations=False,
               stack='1d',
-              njobs=1,
+              njobs=0,
               **preprocessing_kwargs):
     """
     Correlate data of one day
