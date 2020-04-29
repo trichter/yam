@@ -28,6 +28,7 @@ before_install:
       coverage h5py matplotlib "numpy<1.17" obspy $PYFTTW scipy tqdm
   - conda activate testenv
   - # install obspy master, https://travis-ci.org/github/trichter/yam/jobs/657832626
+  - # can be removed after release of obspy 2.0
   - if [[ "$PYFFTW" == "pyfftw" ]]; then
        conda uninstall obspy;
        pip install https://github.com/obspy/obspy/archive/master.zip;
