@@ -1,4 +1,7 @@
 dev:
+  * consequently use float16 in the code,
+    switching to other dtypes may not be completely supported at this point and
+    the possibility to change the dtype may be removed later
   * use --njobs 0 for sequential processing (before it was 1)
     and --njobs 1 for processing of each element in a new process
   * index for cross-correlation is nested one level deeper now to not have

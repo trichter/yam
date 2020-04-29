@@ -247,7 +247,7 @@ def _stretch_wrapper(groupnames, fname, outkey, filter=None,
         traces = [obspyh5.dataset2trace(f[g]) for g in groupnames]
     stream = obspy.Stream(traces)
     for tr in stream:
-        tr.data = np.require(tr.data, float)
+        tr.data = np.require(tr.data, 'float16')
     if filter:
         _filter(stream, filter)
     stretchres = yam.stretch.stretch(stream, **kwargs)
@@ -296,7 +296,7 @@ def start_stretch(io, key, subkey='', njobs=None, reftrid=None,
             fname_reftr = _get_fname(io, reftrid)
             group_reftr = task.replace(key, reftrid)
             reftr = obspy.read(fname_reftr, 'H5', group=group_reftr,
-                               dtype=float)
+                               dtype='float16')
             if len(reftr) != 1:
                 raise NotImplementedError('Reference must be single trace')
             reftr = reftr[0]
