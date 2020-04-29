@@ -22,17 +22,10 @@ before_install:
   - wget https://raw.githubusercontent.com/trichter/conda4travis/latest/conda4travis.sh -O conda4travis.sh
   - source conda4travis.sh
   - conda config --add channels conda-forge
-  - # set numpy<1.17 because of https://github.com/obspy/obspy/issues/2434, can be relaxed after next obspy release
   - conda create -q -n testenv
       python=$PYTHON_VERSION
-      coverage h5py matplotlib "numpy<1.17" obspy $PYFFTW scipy tqdm
+      coverage h5py matplotlib numpy obspy $PYFFTW scipy tqdm
   - conda activate testenv
-  - # install obspy master, https://travis-ci.org/github/trichter/yam/jobs/657832626
-  - # can be removed after release of obspy 2.0
-  - if [[ "$PYFFTW" == "pyfftw" ]]; then
-       conda uninstall obspy;
-       pip install https://github.com/obspy/obspy/archive/master.zip;
-    fi
   - pip install obspyh5
   - conda list
 install:
