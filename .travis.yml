@@ -13,7 +13,7 @@ matrix:
     - os: linux
       env: PYTHON_VERSION=3.7 FLAGS="-v --full -n 2"
     - os: linux
-      env: PYTHON_VERSION=3.7 FLAGS="-v --full -n 2" PYFTTW="pyfftw"
+      env: PYTHON_VERSION=3.7 FLAGS="-v --full -n 2" PYFFTW="pyfftw"
     - os: osx
       env: PYTHON_VERSION=3.7 FLAGS="-v -n 2"
     - os: windows
@@ -25,7 +25,7 @@ before_install:
   - # set numpy<1.17 because of https://github.com/obspy/obspy/issues/2434, can be relaxed after next obspy release
   - conda create -q -n testenv
       python=$PYTHON_VERSION
-      coverage h5py matplotlib "numpy<1.17" obspy $PYFTTW scipy tqdm
+      coverage h5py matplotlib "numpy<1.17" obspy $PYFFTW scipy tqdm
   - conda activate testenv
   - # install obspy master, https://travis-ci.org/github/trichter/yam/jobs/657832626
   - # can be removed after release of obspy 2.0
