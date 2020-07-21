@@ -5,6 +5,7 @@ Yet another monitoring tool using correlations of ambient noise
 [![codecov](https://codecov.io/gh/trichter/yam/branch/master/graph/badge.svg)](https://codecov.io/gh/trichter/yam)
 [![pypi version](https://img.shields.io/pypi/v/yam.svg)](https://pypi.python.org/pypi/yam)
 [![python version](https://img.shields.io/pypi/pyversions/yam.svg)](https://python.org)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3953646.svg)](https://doi.org/10.5281/zenodo.3953646)
 
 
 #### Resources
