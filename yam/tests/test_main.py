@@ -1,6 +1,7 @@
 # Copyright 2017-2019 Tom Eulenfeld, MIT license
 
 import unittest
+import unittest.mock
 from pkg_resources import load_entry_point
 from contextlib import redirect_stderr, redirect_stdout
 import glob
