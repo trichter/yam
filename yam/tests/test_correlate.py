@@ -1,6 +1,7 @@
 # Copyright 2017-2019 Tom Eulenfeld, MIT license
 import unittest
 import sys
+import warnings
 
 import numpy as np
 from obspy import read, read_inventory, UTCDateTime as UTC
@@ -282,8 +283,8 @@ class TestCase(unittest.TestCase):
         # see https://docs.scipy.org/doc/numpy-1.13.0/release.html#
         # assigning-to-slices-views-of-maskedarray
         ignore_msg = r'setting an item on a masked array which has a shared'
-        with np.warnings.catch_warnings():
-            np.warnings.filterwarnings('ignore', ignore_msg)
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', ignore_msg)
             preprocess(stream, day=day, inventory=read_inventory(),
                        remove_response=True,
                        filter=None,
