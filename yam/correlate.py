@@ -120,7 +120,7 @@ def time_norm(tr, method,
             msg = 'clip_set_zero is deprecated, use clip_mode instead'
             warn(msg, DeprecationWarning)
             clip_mode = 'zero' if clip_set_zero else 'clip'
-        from collections import Iterable
+        from collections.abc import Iterable
         if not isinstance(clip_value, Iterable):
             clip_value = [-clip_value, clip_value]
         if clip_std:
