@@ -1,4 +1,4 @@
-dev:
+v0.7.0:
   * consequently use float16 in the code,
     switching to other dtypes may not be completely supported at this point and
     the possibility to change the dtype may be removed later
