@@ -1,0 +1,13 @@
+name: test
+channels:
+  - conda-forge
+dependencies:
+  - obspy
+  - coverage
+  - h5py
+  - tqdm
+  - pyfftw
+  - pip
+  - pip:
+    - obspyh5
+  
