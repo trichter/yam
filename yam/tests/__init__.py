@@ -1,7 +1,7 @@
 """
 Tests for the rf package.
 
-yam-runtests [-h] [-v] [-p] [-d] [-f] [-n num]
+yam-runtests [-h] [-v] [-p] [-d] [--full] [-n num]
 
 -h    short help
 -v    be verbose
