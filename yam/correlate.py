@@ -15,7 +15,7 @@ from obspy.geodetics import gps2dist_azimuth
 import scipy.signal
 from scipy.signal import freqz, iirfilter, hilbert
 
-_USE_FFTWS = 'YAM_NO_FFTW' not in os.environ
+_USE_FFTWS = 'YAM_FFTW' in os.environ
 if _USE_FFTWS:
     try:
         import pyfftw
