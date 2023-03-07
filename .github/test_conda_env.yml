@@ -6,7 +6,7 @@ dependencies:
   - coverage
   - h5py
   - tqdm
-  - pyfftw
+  - pyfftw=0.12
   - pip
   - pip:
     - obspyh5
