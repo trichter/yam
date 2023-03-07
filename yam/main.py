@@ -385,7 +385,10 @@ def run_cmdline(args=None):
            'Useful for a datset with many stations.')
     p_correlate.add_argument('--parallel-inner-loop', action='store_true',
                              help=msg)
-    msg = 'type of plot (a default is chosen for the given key)'
+    msg = ('type of plot (for correlations, default is versus time, '
+           'for stretching results, default is similarity matrix, '
+           'other options: vs_dist - wiggles vs distance, wiggle - wiggles vs time, '
+           'velocity - joint velocity estimate vs time')
     choices = ('vs_dist', 'wiggle', 'velocity')
     p_plot.add_argument('--plottype', help=msg, choices=choices)
     msg = 'specify some plot options (dictionary in JSON format)'
