@@ -13,22 +13,33 @@ jobs:
         os: [ubuntu-latest]
         python: [3.6, 3.7, 3.8, 3.9, "3.10"]
         flags: ["-v -n 2"]
+        fftw: [no]
         include:
           - os: macos-latest
             python: "3.10"
             flags: "-v -n 2"
+            fftw: no
           - os: windows-latest
             python: "3.10"
             flags: "-v -n 2"
+            fftw: no
           - os: ubuntu-latest
             python: "3.10"
             flags: "-v -n 1"
+            fftw: no
           - os: ubuntu-latest
             python: "3.10"
             flags: "-v --full n 2"
+            fftw: no
+          - os: ubuntu-latest
+            python: "3.10"
+            flags: "-v -n 2"
+            fftw: yes
+
     runs-on: ${{ matrix.os }}
     env:
-      flags: ${{ matrix.flags }}
+      FLAGS: ${{ matrix.flags }}
+      YAM_FFTW: ${{ matrix.fftw }}
     defaults:
       run:
         shell: bash -l {0}
@@ -49,7 +60,7 @@ jobs:
       - name: run test suite
         run: |
           mkdir empty; cd empty; cp ../.coveragerc ./
-          coverage run -m yam.tests $flags
+          coverage run -m yam.tests $FLAGS
           coverage combine
           coverage xml -o ../coverage.xml
       - name: upload coverage
