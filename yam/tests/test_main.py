@@ -235,7 +235,7 @@ def get_data(starttime, endtime, **smeta):
         self.out('stretch cauto/CX.PATCX-CX.PATCX/.BHZ-.BHZ 2')
         self.out('stretch cauto 2')
         self.out('remove cauto_t2/CX.PATCX-CX.PATCX/.BHZ-.BHZ')
-        self.out('stretch cauto 2 --njobs 1')
+        self.out('stretch cauto 2 --njobs 0')
         self.out('remove cauto_t2/CX.PATCX-CX.PATCX/.BHZ-.BHZ')
         _replace_in_file('conf.json', 'conf2.json', '"sides": "right"',
                 '"time_period": [null, "2010-02-05"], "max_lag": 40, '

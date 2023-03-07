@@ -25,7 +25,7 @@ jobs:
             fftw: no
           - os: ubuntu-latest
             python: "3.10"
-            flags: "-v -n 1"
+            flags: "-v -n 0"
             fftw: no
           - os: ubuntu-latest
             python: "3.10"
