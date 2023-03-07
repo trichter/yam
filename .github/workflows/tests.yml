@@ -11,8 +11,8 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        python: [3.9, "3.10"]
-        flags: ["-v --full -n 2", "-v -n 1"]
+        python: [3.5, 3.6, 3.7, 3.8, 3.9, "3.10"]
+        flags: ["-v -n 2"]
         include:
           - os: macos-latest
             python: "3.10"
@@ -20,6 +20,12 @@ jobs:
           - os: windows-latest
             python: "3.10"
             flags: "-v -n 2"
+          - os: ubuntu-latest
+            python: "3.10"
+            flags: "-v -n 1"
+          - os: ubuntu-latest
+            python: "3.10"
+            flags: "-v --full n 2"
     runs-on: ${{ matrix.os }}
     env:
       flags: ${{ matrix.flags }}
@@ -27,7 +33,7 @@ jobs:
       run:
         shell: bash -l {0}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Setup conda
         uses: conda-incubator/setup-miniconda@v2
         with:
