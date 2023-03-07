@@ -36,7 +36,6 @@ else:
 
 
 log = logging.getLogger('yam.correlate')
-log.info('do not' * (not _USE_FFTWS) + 'use pyfftw library')
 
 
 def start_parallel_jobs_inner_loop(tasks, do_work, njobs=0):

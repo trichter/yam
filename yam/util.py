@@ -292,7 +292,7 @@ LOGGING_DEFAULT_CONFIG = {
     'capture_warnings': True,
     'formatters': {
         'file': {
-            'format': ('%(asctime)s %(module)-6s%(process)-6d%(levelname)-8s'
+            'format': ('%(asctime)s %(module)-10s%(process)-6d%(levelname)-8s'
                        '%(message)s')
         },
         'console': {

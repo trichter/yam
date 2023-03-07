@@ -15,7 +15,7 @@ import time
 
 import obspy
 
-import yam.commands
+import yam
 from yam.util import (_load_func, create_config,
                       LOGLEVELS, LOGGING_DEFAULT_CONFIG, ParseError,
                       ConfigError)
@@ -182,6 +182,7 @@ def run2(command, io,
         configure_logging(loggingc=logging, verbose=verbose,
                           loglevel=loglevel, logfile=logfile)
     log.info('Yam version %s', yam.__version__)
+    log.info('do not' * (not yam.correlate._USE_FFTWS) + 'use pyfftw library')
     if key is not None and '/' in key:
         key, subkey = key.split('/', 1)
         subkey = '/' + subkey
