@@ -278,6 +278,11 @@ def get_data(starttime, endtime, **smeta):
         self.out('load c1_s1d', 'Good Bye')
         self.out('load c1_s1d_t1/CX.PATCX-CX.PB01', 'Good Bye')
 
+        # check velocity plot
+        self.out('plot c1_s1d_t1 --plottype velocity')
+        globexpr = os.path.join(self.plotdir, 'velocity_change_c1_s1d_t1.png')
+        self.assertEqual(len(glob.glob(globexpr)), 1)
+
     def tearDown(self):
         os.chdir(self.cwd)
         if not self.permanent_tempdir:
