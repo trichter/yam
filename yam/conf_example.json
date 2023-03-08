@@ -46,9 +46,9 @@
         "stretch": "stretch.h5",
         "plot": "plots",
 
-        # set data type, compression and similar when cearting datasets,
-        # see h5py create_dataset function for possible options
-        "dataset_kwargs": {"dtype": "float16", "compression": null}
+        # set data type, compression and similar when creating datasets,
+        # see h5py create_dataset function for possible options, default dtype is float16
+        "dataset_kwargs": {}
         },
 
 
@@ -92,7 +92,7 @@
                 # weather to save the correlations (here the 1h-correlations)
                 "keep_correlations": false,
                 # Stack the correlations (null or "1d" or "xxxh").
-                # Note, that "keep_correlations": false togehter with "stack": null does not make sense,
+                # Note, that "keep_correlations": false together with "stack": null does not make sense,
                 # because correlations would not be written to disk and lost.
                 # Stack can not be larger than "1d" here, because processing is performed on daily data files.
                 # If you want to stack over a longer time, use the separate stack command.

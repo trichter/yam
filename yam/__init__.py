@@ -61,7 +61,7 @@ stacks and stretching results as well as preprocessed data and other aspects.
 Correlations, corresponding stacks and stretching results are saved in HDF5 files.
 The indices inside the HDF5 files are the following (first for correlations, second for stretching results)::
 
-    '{key}/{network1}.{station1}-{network2}.{station2}/{location1}.{channel1}-{location2}.{channel2}/{starttime.datetime:%Y-%m-%dT%H:%M}'
+    '{key}/{network1}.{station1}-{network2}.{station2}/{location1}.{channel1}-{location2}.{channel2}/{starttime.year}-{starttime.month:02d}/{starttime.datetime:%Y-%m-%dT%H:%M}'
     '{key}/{network1}.{station1}-{network2}.{station2}/{location1}.{channel1}-{location2}.{channel2}'
 
 The strings are expanded with the corresponding metadata.
