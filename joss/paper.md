@@ -22,6 +22,10 @@ bibliography: paper.bib
 
 # Summary
 
+By calculating the cross-correlation of seismic noise between two stations, it is possible to retrieve the Green's function between the receivers. In addition, the cross-correlation function can be used to monitor changes in the seismic velocity in the subsurface. We present ``yam`` -- a command line package for calculating cross-correlations and relative velocity changes.
+
+# Statement of need
+
 Monitoring with cross-correlations of ambient noise is a popular technique for investigating relative velocity changes in the local subsurface [@SensSchoenfelder2006].
 The method combines two concepts -- Green's function retrieval between two receivers by cross-correlating an isotropic, homogeneous noise field recorded at the two receivers [@Weaver2002; @Shapiro2004] and velocity monitoring using coda wave interferometry [@Snieder2002].
 For monitoring, the condition of homogeneity and isotropy of the noise field can be relaxed in in favor of the more convenient condition of constancy of the noise sources.
