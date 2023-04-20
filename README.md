@@ -11,7 +11,7 @@ Yet another monitoring tool using correlations of ambient noise
 
 #### Resources
 
-* [Documentation](http://yam.readthedocs.io)
+* [Documentation](http://yam.readthedocs.io) including installation instructions
 * Example: Inter-station cross-correlations -> [notebook](https://nbviewer.jupyter.org/github/trichter/notebooks/blob/master/yam_xcorr_ipoc/xcorr_ipoc.ipynb)
 * Showcase / advanced tutorial: Monitoring seismic velocity -> [notebook](http://nbviewer.jupyter.org/github/trichter/notebooks/blob/master/yam_velocity_variations_patcx/processing_patcx.ipynb)
 * Yam poster at EGU 2018, doi: [10.6084/m9.figshare.16976017](https://doi.org/10.6084/m9.figshare.16976017)
