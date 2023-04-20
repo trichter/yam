@@ -7,6 +7,7 @@ Yet another monitoring tool using correlations of ambient noise
 [![python version](https://img.shields.io/pypi/pyversions/yam.svg)](https://python.org)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3953646.svg)](https://doi.org/10.5281/zenodo.3953646)
 
+`yam` is a Python-based command line package for correlating seismic recordings of ambient vibrations and for the monitoring of relative seismic velocity changes.
 
 #### Resources
 
