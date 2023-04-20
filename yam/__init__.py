@@ -95,6 +95,8 @@ Tutorial
 
 A small tutorial with an example dataset is included.
 It can be loaded into an empty directory with ``yam create --tutorial``.
+Plots are created in a separate ``plots`` folder and can be
+interactively shown with the ``--show`` flag.
 Now you can try out some of the following commands:
 
 .. code:: bash
