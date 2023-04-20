@@ -32,12 +32,12 @@ Some code was reused from previous project `sito <https://github.com/trichter/si
 Installation
 ------------
 
-Dependencies of yam are ``obspy>=1.1 obspyh5>=0.3 h5py``.
+Dependencies of yam are ``obspy>=1.1 obspyh5>=0.3 h5py tqdm``.
 Optional dependencies are ``IPython`` and ``cartopy``.
 The recommended way to install yam is via `anaconda <https://docs.anaconda.com/anaconda/install.html>`_ and pip::
 
     conda --add channels conda-forge
-    conda create -n yam cartopy h5py IPython matplotlib numpy obspy scipy tqdm
+    conda create -n yam cartopy h5py IPython obspy tqdm
     conda activate yam
     pip install yam
 
