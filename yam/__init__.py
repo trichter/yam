@@ -32,12 +32,12 @@ Some code was reused from previous project `sito <https://github.com/trichter/si
 Installation
 ------------
 
-Dependencies of yam are ``obspy>=1.1 obspyh5>=0.3 h5py``.
+Dependencies of yam are ``obspy>=1.1 obspyh5>=0.3 h5py tqdm``.
 Optional dependencies are ``IPython`` and ``cartopy``.
 The recommended way to install yam is via `anaconda <https://docs.anaconda.com/anaconda/install.html>`_ and pip::
 
     conda --add channels conda-forge
-    conda create -n yam cartopy h5py IPython matplotlib numpy obspy scipy tqdm
+    conda create -n yam cartopy h5py IPython obspy tqdm
     conda activate yam
     pip install yam
 
@@ -95,6 +95,8 @@ Tutorial
 
 A small tutorial with an example dataset is included.
 It can be loaded into an empty directory with ``yam create --tutorial``.
+Plots are created in a separate ``plots`` folder and can be
+interactively shown with the ``--show`` flag.
 Now you can try out some of the following commands:
 
 .. code:: bash
@@ -128,7 +130,11 @@ Now you can try out some of the following commands:
 
 Of course, the plots do not look overwhelmingly for such a small dataset.
 
-The readme in the Github repository links to a further advanced tutorial.
+Two advanced tutorials are available as Jupyter notebooks:
+* `Inter-station cross-correlations <https://nbviewer.jupyter.org/github/trichter/notebooks/blob/master/yam_xcorr_ipoc/xcorr_ipoc.ipynb>`_
+* `Monitoring seismic velocity <http://nbviewer.jupyter.org/github/trichter/notebooks/blob/master/yam_velocity_variations_patcx/processing_patcx.ipynb>`
+
+Further resources are listed in the readme of the Github repository.
 
 
 Use your own data
