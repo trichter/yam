@@ -131,8 +131,9 @@ Now you can try out some of the following commands:
 Of course, the plots do not look overwhelmingly for such a small dataset.
 
 Two advanced tutorials are available as Jupyter notebooks:
+
 * `Inter-station cross-correlations <https://nbviewer.jupyter.org/github/trichter/notebooks/blob/master/yam_xcorr_ipoc/xcorr_ipoc.ipynb>`_
-* `Monitoring seismic velocity <http://nbviewer.jupyter.org/github/trichter/notebooks/blob/master/yam_velocity_variations_patcx/processing_patcx.ipynb>`
+* `Monitoring seismic velocity <http://nbviewer.jupyter.org/github/trichter/notebooks/blob/master/yam_velocity_variations_patcx/processing_patcx.ipynb>`_
 
 Further resources are listed in the readme of the Github repository.
 
