@@ -122,9 +122,9 @@ Now you can try out some of the following commands:
     yam stretch c1_s1d_s3dm1d 1  # stretch the stacked data with stretch configuration 1
     yam stretch cauto_s2 2       # stretch the stacked auto-correlations with another stretch configuration
     yam info                     # find out about the keys which are already in use
-    yam plot cauto_t2            # plot similarity matrices for the given processing chain
-    yam plot cauto_s2_t2 --plot-options '{"show_line": true}' --show  # plot all similarity matrices for this processing
-                                                                      # chain and display them on screen (zoom etc.)
+    yam plot cauto_s2_t2         # plot similarity matrices for the given processing chain
+    yam plot cauto_s2_t2 --plot-options '{"show_line": true}' --show  # plot similarity matrices and show
+                                                                      # an interactive plot
     yam plot c1_s1d_s3dm1d_t1/CX.PATCX-CX.PB01  # plot similarity matrices, but only for one station combination
                                                 # (restricting the group is also possible for stacking and stretching)
 
