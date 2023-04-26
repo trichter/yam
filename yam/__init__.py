@@ -17,8 +17,9 @@ commands are issued via command line interface. Velocity variations are determin
 Moving Window Cross Spectral technique (MWCS).
 *MIIC* is another monitoring library using the time-domain stretching technique.
 
-*Yam*, contrary to MSNoise, is designed for off-line usage, but also includes capabilities to reprocess continuously
-growing data. Yam does not rely onto a database, but rather checks on the fly which results already exist and which
+*Yam*, contrary to MSNoise, is designed to work with completed datasets, but also
+includes capabilities to process new additional data.
+Yam does not rely onto a database, but rather checks on the fly which results already exist and which
 results have still to be calculated.
 Cross-correlations are written to HDF5 files via the ObsPy plugin obspyh5. Thus, correlation data can be easily
 accessed with ObsPy's |read| function after the calculation. It follows a similar processing flow as MSNoise,
