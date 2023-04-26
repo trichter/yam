@@ -1,5 +1,5 @@
 """
-Tests for the rf package.
+Tests for the yam package.
 
 yam-runtests [-h] [-v] [-p] [-d] [--full] [-n num]
 
