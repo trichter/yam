@@ -53,7 +53,8 @@ The scripts are started with the command line program ``yam``.
 e.g. ``yam correlate -h`` will print help for the ``correlate`` command.
 
 ``create`` will create an example configuration file in JSON format.
-The processing commands are ``correlate``, ``stack`` and ``stretch``.
+The processing commands ``correlate``, ``stack`` and ``stretch`` support parallelization.
+The number of cores can be specified with the ``--njobs`` flag, by default all available cores are used.
 
 ``info``, ``print``, ``load`` and ``plot`` commands allow to inspect correlations,
 stacks and stretching results as well as preprocessed data and other aspects.
