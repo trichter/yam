@@ -38,7 +38,7 @@ Another popular package for this task is MSNoise [@msnoise], which is especially
 Cross-correlations are written to HDF5 files using the ObsPy plugin obspyh5.
 This makes it easy to access the correlation data after computation using ObsPy's ``read()`` function.
 Correlations can also be exported to various seismic formats to allow the determination of surface wave dispersion curves.
-The analysis of changes in the cross-correlation functions is implemented using the stretching procedure.
+The analysis of changes in the cross-correlation functions is implemented using the stretching procedure [@SensSchoenfelder2006].
 One of the strengths of the code is the configuration, which is declared in a simple but heavily commented JSON file, unlike to a web interface used with MSNoise.
 It is possible to declare similar configurations without explicit repetition.
 A possible use case is to reprocess an entire dataset in a different frequency band or to stretch with the same parameters using a different time window.
