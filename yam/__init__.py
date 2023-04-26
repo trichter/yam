@@ -97,14 +97,19 @@ A small tutorial with an example dataset is included.
 It can be loaded into an empty directory with ``yam create --tutorial``.
 Plots are created in a separate ``plots`` folder and can be
 interactively shown with the ``--show`` flag.
-Now you can try out some of the following commands:
+Please open a console to work through the example command sequence.
+It is recommended to open the configuration file to simultaneously check the
+configuration of the keys used:
 
 .. code:: bash
+
+    mkdir yam_tutorial; cd yam_tutorial  # switch to empty directory
+    yam create --tutorial  # load tutorial dataset and configuration file
 
     yam info               # plot information about project
     yam info stations      # print inventory info
     yam info data          # plot info about data files
-    yam plot stations      # plot station map
+    yam plot stations      # plot station map (needs cartopy)
     yam print data CX.PATCX..BHZ 2010-02-03       # load data for a specific station and day and print information
     yam load data CX.PATCX..BHZ 2010-02-03        # load data for a specific station and day and start an IPython session
     yam plot data CX.PATCX..BHZ 2010-02-03        # plot a day file
