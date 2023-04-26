@@ -1,4 +1,4 @@
-# Copyright 2017-2019 Tom Eulenfeld, MIT license
+# Copyright 2017-2023 Tom Eulenfeld, MIT license
 """Preprocessing and correlation"""
 import yam.stack
 from yam.util import _filter, IterTime, smooth as smooth_func, _time2sec

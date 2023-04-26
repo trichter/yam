@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2017-2019 Tom Eulenfeld, MIT license
+# Copyright 2017-2023 Tom Eulenfeld, MIT license
 """
 Plotting functions
 

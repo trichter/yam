@@ -1,4 +1,4 @@
-# Copyright 2017-2018 Tom Eulenfeld, GPLv3
+# Copyright 2017-2023 Tom Eulenfeld, MIT license
 import os.path
 import re
 
@@ -32,7 +32,7 @@ REQUIRES = ['h5py', 'matplotlib', 'numpy', 'obspy>=1.1', 'obspyh5>=0.3',
 CLASSIFIERS = [
     'Environment :: Console',
     'Intended Audience :: Science/Research',
-    'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
+    'License :: OSI Approved :: MIT License',
     'Operating System :: OS Independent',
     'Programming Language :: Python :: 3',
     'Topic :: Scientific/Engineering :: Physics'
@@ -45,7 +45,6 @@ setup(name='yam',
       long_description=LONG_DESCRIPTION,
       url='https://github.com/trichter/yam',
       author='Tom Eulenfeld',
-      author_email='tom.eulenfeld@gmail.de',
       license='MIT',
       packages=find_packages(),
       package_dir={'yam': 'yam'},

@@ -1,4 +1,4 @@
-# Copyright 2017-2019 Tom Eulenfeld, MIT license
+# Copyright 2017-2023 Tom Eulenfeld, MIT license
 """
 Command line interface and main entry point
 """
