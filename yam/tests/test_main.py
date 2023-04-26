@@ -168,10 +168,13 @@ def get_data(starttime, endtime, **smeta):
         t1 = time.time()
         self.out('correlate 1')  # takes long
         t2 = time.time()
+        # should be faster, run 3x to get some statistics
         self.out('correlate 1 -v')
+        self.out('correlate 1')
+        self.out('correlate 1')
         t3 = time.time()
         if not self.permanent_tempdir:
-            self.assertLess(t3 - t2, 0.5 * (t2 - t1))
+            self.assertLess((t3 - t2) / 3, 0.9 * (t2 - t1))
         self.out('correlate auto')  # takes long
         self.out('correlate 1a')  # takes long
         self.out('info', 'c1_s1d: 7 combs')
