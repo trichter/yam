@@ -27,24 +27,24 @@ We present ``yam`` -- a Python-based command line package for calculating cross-
 
 # Statement of need
 
-Monitoring with cross-correlations of ambient noise is a popular technique for investigating relative velocity changes in the local subsurface [@SensSchoenfelder2006]. The technique may allow to draw conclusions about the nature and amplitude of driving mechanisms (e.g. subsurface changes in rock damage, stress, water content) that might not otherwise be observable.
+Monitoring with cross-correlations of ambient noise is a popular technique for investigating relative velocity changes in the local subsurface [@SensSchoenfelder2006]. The technique may allow one to draw conclusions about the nature and amplitude of driving mechanisms (e.g. subsurface changes in rock damage, stress, water content) that might not otherwise be observable.
 The method combines two concepts -- Green's function retrieval between two receivers by cross-correlating an isotropic, homogeneous noise field recorded at the two receivers [@Weaver2002; @Shapiro2004] and velocity monitoring using coda wave interferometry [@Snieder2002].
 For monitoring, the condition of homogeneity and isotropy of the noise field can be relaxed in in favor of the more convenient condition of constancy of the noise sources.
 
 ``yam`` is an ObsPy-based [@obspy] Python command line package for correlating seismic recordings of ambient vibrations and for the monitoring of relative seismic velocity changes.
 Another popular package for this task is MSNoise [@msnoise], which is especially useful for large datasets and continuous monitoring because it uses a sqlite or mysql database.
-``yam``, contrary to MSNoise, is designed to work with completed datasets, but also includes capabilities to process new additional data.
+``yam``, contrary to MSNoise, is designed to work with complete datasets, but also includes capabilities to process new additional data.
 ``yam`` does not rely on a database, but checks on the fly which results already exist and which results still have to be calculated.
 Cross-correlations are written to HDF5 files using the ObsPy plugin obspyh5.
 This makes it easy to access the correlation data after computation using ObsPy's ``read()`` function.
 Correlations can also be exported to various seismic formats to allow the determination of surface wave dispersion curves.
 The analysis of changes in the cross-correlation functions is implemented using the stretching procedure [@SensSchoenfelder2006].
-One of the strengths of the code is the configuration, which is declared in a simple but heavily commented JSON file, unlike to a web interface used with MSNoise.
+One of the strengths of the code is the configuration, which is declared in a simple but heavily commented JSON file, unlike the web interface used with MSNoise.
 It is possible to declare similar configurations without explicit repetition.
 A possible use case is to reprocess an entire dataset in a different frequency band or to stretch with the same parameters using a different time window.
 Parts of this code have been successfully used in @Richter2014 to estimate velocity changes induced by ground shaking and thermal stresses, and in @SensSchoenfelder2019 to estimate velocity changes induced by tidal stresses.
 
-``yam`` is mainly intended for researchers, but can also be used for bachelor and master theses due to its easy installation and handling.
+``yam`` is mainly intended for researchers and can be used for bachelor and master theses due to its easy installation and handling.
 The package can be installed from PyPI; online documentation and tutorials are available on the project website.
 
 # References
