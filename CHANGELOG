@@ -1,3 +1,5 @@
+v0.7.2:
+  * improve the documentation and the tutorials
 v0.7.1:
   * use pyfftw if environment variable YAM_FFTW is set and different from "no" or "false"
     (before pyfftw was used if environment variable was set, regardless of its value)
