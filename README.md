@@ -5,7 +5,7 @@ Yet another monitoring tool using correlations of ambient noise
 [![codecov](https://codecov.io/gh/trichter/yam/branch/master/graph/badge.svg)](https://codecov.io/gh/trichter/yam)
 [![pypi version](https://img.shields.io/pypi/v/yam.svg)](https://pypi.python.org/pypi/yam)
 [![python version](https://img.shields.io/pypi/pyversions/yam.svg)](https://python.org)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3953646.svg)](https://doi.org/10.5281/zenodo.3953646)
+[![DOI](https://joss.theoj.org/papers/85c5634739d01a44322b4e090df9c65b/status.svg)](https://joss.theoj.org/papers/85c5634739d01a44322b4e090df9c65b)
 
 `yam` is a Python-based command line package for correlating seismic recordings of ambient vibrations and for the monitoring of relative seismic velocity changes.
 
@@ -23,7 +23,7 @@ Yet another monitoring tool using correlations of ambient noise
 
 If you found this package useful, please consider citing it.
 
-Eulenfeld T (2020),
+Eulenfeld T (2023),
 yam: Yet another monitoring tool using correlations of ambient noise,
-https://github.com/trichter/yam,
-doi:[10.5281/zenodo.3953646](https://doi.org/10.5281/zenodo.3953646)
+Journal of Open Source Software, 8(85), 5267,
+doi:[10.21105/joss.05267](https://doi.org/10.21105/joss.05267)
