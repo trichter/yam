@@ -1,0 +1,2 @@
+# requirements to build the docs
+sphinx
