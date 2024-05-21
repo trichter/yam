@@ -155,7 +155,7 @@ A good start is to change the ``inventory`` and ``data`` parameters.
 Read correlation and results of stretching procedure in Python for further processing
 *************************************************************************************
 
-Use ObsPy's |read| to read correlations and stacks and `~yam.commands.read_dicts()` to read stretching results.
+Use ObsPy's |read| to read correlations and stacks and :func:`~yam.io.read_dicts()` to read stretching results.
 
 ::
 
@@ -186,8 +186,8 @@ configuration dictionary      functions consuming the options
 ========================  ========================================
     io                    Configuration for input and output (needed by most functions in `~yam.commands` module)
     correlate             `~yam.commands.start_correlate` -> `~yam.correlate.correlate`  ->  `~yam.correlate.preprocess`  -> `~yam.correlate.time_norm`, `~yam.correlate.spectral_whitening`
-    stack                 `~yam.commands.start_stack` -> `~yam.stack.stack`
-    stretch               `~yam.commands.start_stretch` -> `~yam.commands.stretch_wrapper` -> `~yam.stretch.stretch`
+    stack                 `~yam.commands.start_stack` -> `~yam.commands._stack_wrapper` -> `~yam.stack.stack`
+    stretch               `~yam.commands.start_stretch` -> `~yam.commands._stretch_wrapper` -> `~yam.stretch.stretch`
     plot_*_options        See corresponding functions in `~yam.imaging` module
 ========================  ========================================
 
@@ -211,4 +211,4 @@ More information about the different subcommands of yam can be found in the corr
 __version__ = '0.7.2'
 
 from yam.main import run
-from yam.commands import read_dicts
+from yam.io import read_dicts

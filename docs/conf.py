@@ -32,8 +32,11 @@ sys.path.insert(0, root)
 PROJECT = 'Yam'
 DESC = 'Yet another monitoring tool using correlations of ambient noise'
 AUTHOR = 'Tom Eulenfeld'
-YEAR = '2017'
+YEAR = '2017-2024'
 GITHUB = 'https://github.com/trichter/yam'
+
+
+autodoc_mock_imports = ['h5py', 'obspyh5', 'tqdm', 'obspy']
 
 
 class Mock(object):
@@ -62,6 +65,7 @@ class Mock(object):
 for i in range(20):
     try:
         import yam
+        import yam.io
         import yam.imaging
     except ImportError:
         exc_type, exc_value, tb = sys.exc_info()
@@ -91,7 +95,10 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.viewcode'
               ]
 
-autodoc_default_flags = ['members']
+autodoc_default_options = {
+    'members': True,
+    'private-members': '_stretch_wrapper, _stack_wrapper',
+}
 default_role = 'py:obj'
 
 # Add any paths that contain templates here, relative to this directory.
@@ -122,11 +129,6 @@ author = AUTHOR
 release = VERSION
 # The short X.Y version.
 version = release.split("-")[0]
-
-#
-# This is also used if you do content translation via gettext catalogs.
-# Usually you set "language" from the command line for these cases.
-language = None
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:

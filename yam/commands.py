@@ -55,7 +55,7 @@ def start_correlate(io,
     :param filter_inventory: filter inventory with its select method,
         specified dict is passed to |Inventory.select|
     :param str startdate,enddate: start and end date as strings
-    : param njobs: number of cores to use for computation, days are computed
+    :param njobs: number of cores to use for computation, days are computed
         parallel, this might consume much memory, default: None -- use all
         available cores, set njobs to 0 for sequential processing
     :param parallel_inner_loop: Run inner loops parallel instead of outer loop
@@ -66,9 +66,9 @@ def start_correlate(io,
         (default: float16 - half precision)
     :param dataset_kwargs: options passed to obspyh5 resp. h5py when creating
          a new dataset,
-         e.g. `dataset_kwargs={'compression':'gzip'}`.
+         e.g. ``dataset_kwargs={'compression':'gzip'}``.
          See create_dataset in h5py for more options.
-         By default the dtype is set to `'float16'`.
+         By default the dtype is set to ``'float16'``.
     :param keep_correlations,stack,\*\*kwargs: all other kwargs are passed to
         `~yam.correlate.correlate()` function
     """
@@ -150,9 +150,9 @@ def start_stack(io, key, outkey, subkey='', njobs=None,
     :param starttime,endtime: constrain start and end dates
     :param dataset_kwargs: options passed to obspyh5 resp. h5py when creating
          a new dataset,
-         e.g. `dataset_kwargs={'compression':'gzip'}`.
+         e.g. ``dataset_kwargs={'compression':'gzip'}``.
          See create_dataset in h5py for more options.
-         By default the dtype is set to `'float16'`.
+         By default the dtype is set to ``'float16'``.
     :param \*\*kwargs: all other kwargs are passed to
         `yam.stack.stack()` function
     """
@@ -270,16 +270,16 @@ def start_stretch(io, key, subkey='', njobs=None, reftrid=None,
         default: None -- use all available cores,
         set njobs to 0 for sequential processing
     :param reftrid: Parallel processing is only possible when this parameter
-        is specified. Key to load the reference trace from, e.g. `'c1_s'`,
-        it can be created by a command similar to `yam stack c1 ''`.
+        is specified. Key to load the reference trace from, e.g. ``'c1_s'``,
+        it can be created by a command similar to ``yam stack c1 ''``.
     :param starttime,endtime: constrain start and end dates
     :param dataset_kwargs: options passed to obspyh5 resp. h5py when creating
          a new dataset,
-         e.g. `dataset_kwargs={'compression':'gzip'}`.
+         e.g. ``dataset_kwargs={'compression':'gzip'}``.
          See create_dataset in h5py for more options.
-         By default the dtype is set to `'float16'`.
+         By default the dtype is set to ``'float16'``.
     :param \*\*kwargs: all other kwargs are passed to
-        `stretch_wrapper()` function
+        `~yam.commands._stretch_wrapper()` function
     """
     if dataset_kwargs is None:
         dataset_kwargs = {}
