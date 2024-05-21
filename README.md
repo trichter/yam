@@ -2,6 +2,7 @@
 Yet another monitoring tool using correlations of ambient noise
 
 [![build status](https://github.com/trichter/yam/workflows/tests/badge.svg)](https://github.com/trichter/yam/actions)
+[![docs status](https://readthedocs.org/projects/yam/badge/?version=latest)](https://yam.readthedocs.io)
 [![codecov](https://codecov.io/gh/trichter/yam/branch/master/graph/badge.svg)](https://codecov.io/gh/trichter/yam)
 [![pypi version](https://img.shields.io/pypi/v/yam.svg)](https://pypi.python.org/pypi/yam)
 [![python version](https://img.shields.io/pypi/pyversions/yam.svg)](https://python.org)
