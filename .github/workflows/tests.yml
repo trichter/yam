@@ -12,28 +12,28 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        python: [3.6, 3.7, 3.8, 3.9, "3.10"]
+        python: ["3.10", "3.11", "3.12"]
         flags: ["-v -n 2"]
         fftw: [no]
         include:
           - os: macos-latest
-            python: "3.10"
+            python: "3.12"
             flags: "-v -n 2"
             fftw: no
           - os: windows-latest
-            python: "3.10"
+            python: "3.12"
             flags: "-v -n 2"
             fftw: no
           - os: ubuntu-latest
-            python: "3.10"
+            python: "3.12"
             flags: "-v -n 0"
             fftw: no
           - os: ubuntu-latest
-            python: "3.10"
+            python: "3.12"
             flags: "-v --full n 2"
             fftw: no
           - os: ubuntu-latest
-            python: "3.10"
+            python: "3.12"
             flags: "-v -n 2"
             fftw: yes
 
