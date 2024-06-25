@@ -33,7 +33,7 @@ jobs:
             flags: "-v --full n 2"
             fftw: no
           - os: ubuntu-latest
-            python: "3.12"
+            python: "3.11"
             flags: "-v -n 2"
             fftw: yes
 
