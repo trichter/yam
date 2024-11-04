@@ -16,6 +16,8 @@ import time
 import obspy
 
 import yam
+import yam.commands
+import yam.correlate
 from yam.util import (_load_func, create_config,
                       LOGLEVELS, LOGGING_DEFAULT_CONFIG, ParseError,
                       ConfigError)
