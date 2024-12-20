@@ -206,7 +206,7 @@ def spectral_whitening(tr, smooth=None, filter=None,
     :param filter: filter spectrum with bandpass after whitening
         (tuple with min and max frequency)
     :param waterlevel: waterlevel relative to mean of spectrum
-    :param mask_again: weather to mask array after this operation again and
+    :param mask_again: wether to mask array after this operation again and
         set the corresponding data to 0
 
     :return: whitened data
@@ -269,7 +269,7 @@ def get_data(smeta, data, data_format, day, overlap=0, edge=0,
     :param overlap: overlap to next day in seconds
     :param edge: additional time span requested from day before and after
         in seconds
-    :param trim_and_merge: weather data is trimmed to day boundaries and merged
+    :param trim_and_merge: wether data is trimmed to day boundaries and merged
     """
     next_day = day + 24 * 3600
     if not isinstance(data, str):
