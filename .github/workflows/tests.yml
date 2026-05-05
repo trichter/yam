@@ -12,24 +12,24 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        python: ["3.10", "3.11", "3.12"]
+        python: ["3.12", "3.13", "3.14"]
         flags: ["-v -n 2"]
         fftw: [no]
         include:
           - os: macos-latest
-            python: "3.12"
+            python: "3.14"
             flags: "-v -n 2"
             fftw: no
           - os: windows-latest
-            python: "3.12"
+            python: "3.14"
             flags: "-v -n 2"
             fftw: no
           - os: ubuntu-latest
-            python: "3.12"
+            python: "3.14"
             flags: "-v -n 0"
             fftw: no
           - os: ubuntu-latest
-            python: "3.12"
+            python: "3.14"
             flags: "-v --full n 2"
             fftw: no
           - os: ubuntu-latest
@@ -65,7 +65,7 @@ jobs:
           coverage combine
           coverage xml -o ../coverage.xml
       - name: upload coverage
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }} # required
           fail_ci_if_error: true
