@@ -1,11 +1,10 @@
 # Copyright 2017-2023 Tom Eulenfeld, MIT license
 """Utility functions"""
 
-from importlib import import_module
+from importlib import import_module, resources
 import logging
 import numbers
 import os
-from pkg_resources import resource_filename
 import shutil
 import sys
 import tempfile
@@ -120,7 +119,10 @@ def _trim_time_period(stream, time_period):
 
 def create_config(conf='conf.json', tutorial=False, less_data=False):
     """Create JSON config file and download tutorial data if requested"""
-    shutil.copyfile(resource_filename('yam', 'conf_example.json'), conf)
+    source = resources.files('yam') / 'conf_example.json'
+    with resources.as_file(source) as src_path:
+        shutil.copyfile(src_path, conf)
+    #shutil.copyfile(resource_filename('yam', 'conf_example.json'), conf)
     temp_dir = os.path.join(tempfile.gettempdir(), 'yam_example_data')
     template = os.path.join(temp_dir, 'example_data')
     station_template = os.path.join(temp_dir, 'example_inventory')

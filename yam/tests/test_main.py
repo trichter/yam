@@ -2,7 +2,7 @@
 
 import unittest
 import unittest.mock
-from pkg_resources import load_entry_point
+from importlib.metadata import entry_points
 from contextlib import redirect_stderr, redirect_stdout
 import glob
 import io
@@ -53,7 +53,7 @@ class TestCase(unittest.TestCase):
                              '[run]\ndata_file = ' + covfn)
 
         self.plotdir = os.path.join(self.tempdir, 'plots')
-        self.script = load_entry_point('yam', 'console_scripts', 'yam')
+        self.script = entry_points(group='console_scripts')['yam'].load()
         total = 74 - 2 * self.permanent_tempdir
         self.pbar = tqdm.tqdm(total=total, desc='CLI tests passed')
 

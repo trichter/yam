@@ -11,7 +11,7 @@ yam-runtests [-h] [-v] [-p] [-d] [--full] [-n num]
 -n num   maximal number of cores to use (default: all)
 """
 
-from pkg_resources import resource_filename
+from importlib import resources
 import sys
 import unittest
 
@@ -21,8 +21,9 @@ def run():
         print(__doc__)
         return
     loader = unittest.TestLoader()
-    test_dir = resource_filename('yam', 'tests')
-    suite = loader.discover(test_dir)
+    test_pkg = resources.files('yam') / 'tests'
+    with resources.as_file(test_pkg) as test_dir:
+        suite = loader.discover(str(test_dir))
     runner = unittest.runner.TextTestRunner()
     ret = not runner.run(suite).wasSuccessful()
     sys.exit(ret)
