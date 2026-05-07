@@ -1,4 +1,4 @@
-dev:
+v0.7.3:
   * replace pkg_resources package removed from setuptools with importlib
 v0.7.2:
   * improve the documentation and the tutorials
