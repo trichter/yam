@@ -208,7 +208,7 @@ More information about the different subcommands of yam can be found in the corr
 .. |io| replace:: io configuration dictionary
 """
 
-__version__ = '0.7.3'
+__version__ = '0.7.4-dev'
 
 from yam.main import run
 from yam.io import read_dicts
